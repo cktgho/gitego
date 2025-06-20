@@ -1,0 +1,13 @@
+# Go build files
+gitego
+gitego.exe
+
+# Go dependency directory
+/vendor/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Miscellaneous
+*_files
