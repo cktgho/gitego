@@ -86,25 +86,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><code>gitego</code> is a command-line tool designed to completely eliminate the risk of committing to a repository with the wrong user identity. It allows you to define separate profiles for work, personal projects, and clients, and then automatically switch between them based on your working directory.</p>
 <p>It seamlessly manages your <code>user.name</code>, <code>user.email</code>, SSH keys, and Personal Access Tokens (PATs), acting as a unified and intelligent manager for your Git identity.</p>
 <hr>
-<section id="how-gitego-helps-you" class="level2">
-<h2 class="anchored" data-anchor-id="how-gitego-helps-you">How gitego helps you</h2>
-<p>Have you ever accidentally committed to a personal project with your work email? Or pushed to a client’s repository with your personal GitHub account? This is a common and often embarrassing problem that can lead to a messy commit history and professional awkwardness.</p>
-<p><code>gitego</code> solves this by making identity management an automated, invisible part of your workflow. Instead of you having to remember to switch profiles, <code>gitego</code> does it for you based on simple rules you define. It acts as both an automatic switcher and a final safety net, ensuring the right identity is always used for the right project.</p>
-</section>
 <section id="key-features" class="level2">
 <h2 class="anchored" data-anchor-id="key-features">Key features</h2>
 <ul>
-<li><p><strong>Automatic profile switching:</strong> Configure profiles to activate automatically when you enter a specific directory.</p></li>
-<li><p><strong>Unified identity management:</strong> A single profile can manage your commit author (<code>user.name</code>, <code>email</code>), your authentication method (<code>ssh-key</code>), and your API token (<code>pat</code>).</p></li>
-<li><p><strong>True cross-platform support:</strong> Works natively on macOS, Windows, and Linux by integrating with each OS’s secure credential store for its internal vault.</p></li>
-<li><p><strong>Git credential helper:</strong> Acts as a proper, robust credential helper for Git, ensuring seamless and secure authentication for <code>https://</code> remotes without conflicting with other system tools.</p></li>
-<li><p><strong>Pre-commit safety net:</strong> An optional Git hook warns you if you’re about to commit with a mismatched identity, providing a final chance to prevent a mistake.</p></li>
+<li><strong>Automatic profile switching:</strong> Configure profiles to activate automatically when you enter a specific directory.</li>
+<li><strong>Unified identity management:</strong> A single profile can manage your commit author (<code>user.name</code>, <code>email</code>), your authentication method (<code>ssh-key</code>), and your API token (<code>pat</code>).</li>
+<li><strong>True cross-platform support:</strong> Works natively on macOS, Windows, and Linux by integrating with each OS’s secure credential store for its internal vault.</li>
+<li><strong>Git credential helper:</strong> Acts as a proper, robust credential helper for Git, ensuring seamless and secure authentication for <code>https://</code> remotes without conflicting with other system tools.</li>
+<li><strong>Pre-commit safety net:</strong> An optional Git hook warns you if you’re about to commit with a mismatched identity, providing a final chance to prevent a mistake.</li>
 </ul>
 </section>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
 <p>You must have <a href="https://go.dev/dl/">Go</a> (version 1.21+) installed on your system.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install <span class="pp">[</span><span class="ss">github.com/bgreenwell/gitego@latest</span><span class="pp">]</span><span class="er">(</span><span class="ex">https://www.google.com/search?q=https://github.com/bgreenwell/gitego%40latest</span><span class="kw">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install github.com/bgreenwell/gitego@latest</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><em>(Note: Ensure your Go bin directory, typically <code>~/go/bin</code>, is in your system’s <code>PATH</code>.)</em></p>
 </section>
 <section id="one-time-setup-configure-git" class="level2">
@@ -114,118 +109,174 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> config <span class="at">--global</span> credential.helper <span class="st">""</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Set gitego as the one and only helper, using the required '\!' prefix</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> config <span class="at">--global</span> <span class="at">--add</span> credential.helper <span class="st">"\!gitego credential"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> config <span class="at">--global</span> <span class="at">--add</span> credential.helper <span class="st">"!gitego credential"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="example-usage-walkthrough" class="level2">
 <h2 class="anchored" data-anchor-id="example-usage-walkthrough">Example usage walkthrough</h2>
 <p>Here’s a typical workflow for setting up and using <code>gitego</code>.</p>
 <section id="add-your-profiles" class="level4">
 <h4 class="anchored" data-anchor-id="add-your-profiles">1. Add your profiles</h4>
-<p>First, define your different identities. You can add a simple profile, one with a dedicated SSH key, and one with a Personal Access Token (PAT) for HTTPS authentication.</p>
-<ul>
-<li><strong>Note:</strong> For profiles that will authenticate with a service like GitHub, it’s crucial to provide your login <code>username</code> for that service.</li>
-</ul>
+<p>First, define your different identities.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A simple personal profile</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> add personal <span class="at">--name</span> <span class="st">"Brandon"</span> <span class="at">--email</span> <span class="st">"brandon.personal@email.com"</span> <span class="at">--username</span> <span class="st">"bgreenwell-personal"</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># A work profile that uses a specific SSH key</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> add personal <span class="at">--name</span> <span class="st">"Brandon"</span> <span class="at">--email</span> <span class="st">"brandon.personal@email.com"</span> <span class="at">--username</span> <span class="st">"bgreenwell-personal"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># A work profile that uses a specific SSH key</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> add work-ssh <span class="at">--name</span> <span class="st">"Brandon Greenwell"</span> <span class="at">--email</span> <span class="st">"brandon.work@company.com"</span> <span class="at">--username</span> <span class="st">"bgreenwell-work"</span> <span class="at">--ssh-key</span> ~/.ssh/id_work</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> add work-ssh <span class="at">--name</span> <span class="st">"Brandon Greenwell"</span> <span class="at">--email</span> <span class="st">"brandon.work@company.com"</span> <span class="at">--username</span> <span class="st">"bgreenwell-work"</span> <span class="at">--ssh-key</span> <span class="dt">\~</span>/.ssh/id\_work</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># A client profile that uses a PAT for HTTPS</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> add client-abc <span class="at">--name</span> <span class="st">"Brandon G."</span> <span class="at">--email</span> <span class="st">"brandon@client-abc.com"</span> <span class="at">--username</span> <span class="st">"bgreenwell-client"</span> <span class="at">--pat</span> <span class="st">"ghp\_YourClientPATHere"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># A client profile that uses a PAT for HTTPS</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> add client-abc <span class="at">--name</span> <span class="st">"Brandon G."</span> <span class="at">--email</span> <span class="st">"brandon@client-abc.com"</span> <span class="at">--username</span> <span class="st">"bgreenwell-client"</span> <span class="at">--pat</span> <span class="st">"ghp_YourClientPATHere"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="list-your-configured-profiles" class="level4">
 <h4 class="anchored" data-anchor-id="list-your-configured-profiles">2. List your configured profiles</h4>
 <p>Use the <code>list</code> (or <code>ls</code>) command to see all the profiles you’ve saved.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> list</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><em>Expected Output:</em></p>
-<pre><code>PROFILE    &amp;#9;NAME                 &amp;#9;EMAIL                       &amp;#9;USERNAME
-
------
-
-client-abc &amp;#9;Brandon G.           &amp;#9;brandon@client-abc.com      &amp;#9;bgreenwell-client
-personal   &amp;#9;Brandon              &amp;#9;brandon.personal@email.com  &amp;#9;bgreenwell-personal
-work-ssh   &amp;#9;Brandon Greenwell    &amp;#9;brandon.work@company.com    &amp;#9;bgreenwell-work</code></pre>
+<pre><code>ACTIVE  PROFILE     NAME                 EMAIL                       ATTRIBUTES
+------  -------     ----                 -----                       ----------
+        client-abc  Brandon G.           brandon@client-abc.com      [PAT]
+        personal    Brandon              brandon.personal@email.com
+        work-ssh    Brandon Greenwell    brandon.work@company.com    [SSH]</code></pre>
 </section>
 <section id="set-a-global-default" class="level4">
 <h4 class="anchored" data-anchor-id="set-a-global-default">3. Set a global default</h4>
-<p>The <code>use</code> command sets your default global identity for any repositories that don’t have a specific rule.</p>
+<p>The <code>use</code> command sets your default global identity for any repositories that don’t have a specific rule. This will also update your global <code>.gitconfig</code>.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> use personal</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><em>Expected Output:</em></p>
 <pre><code>✓ Set active profile to 'personal'.</code></pre>
+<p>Now, <code>gitego list</code> will show the active profile marked with an asterisk:</p>
+<pre><code>ACTIVE  PROFILE     NAME                 EMAIL                       ATTRIBUTES
+------  -------     ----                 -----                       ----------
+        client-abc  Brandon G.           brandon@client-abc.com      [PAT]
+*       personal    Brandon              brandon.personal@email.com
+        work-ssh    Brandon Greenwell    brandon.work@company.com    [SSH]</code></pre>
 </section>
-<section id="configure-automatic-switching-the-magic" class="level4">
-<h4 class="anchored" data-anchor-id="configure-automatic-switching-the-magic">4. Configure automatic switching (the magic)</h4>
+<section id="configure-automatic-switching" class="level4">
+<h4 class="anchored" data-anchor-id="configure-automatic-switching">4. Configure automatic switching</h4>
 <p>Now, tell <code>gitego</code> which profiles to use for which project directories.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> auto <span class="dt">\~</span>/dev/work/ client-abc</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> auto <span class="dt">\~</span>/dev/personal/ personal</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Let’s see it in action.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Outside of any managed directory</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="dt">\~</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize a dummy git repo if you don't have one here, for 'status' to work</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> init . <span class="dt">\&gt;</span>/dev/null 2<span class="dt">\&gt;</span><span class="kw">&amp;</span><span class="ex">1</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> status</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><em>Expected Output:</em></p>
-<pre><code>## \--- Git Identity Status --- Name:   Brandon Email:  brandon.personal@email.com Source: Global Git Config</code></pre>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Now, inside a managed directory</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/dev/work/project-x</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> init . <span class="co"># (if it's a new repo)</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> status</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><em>Expected Output:</em></p>
-<pre><code>--- Git Identity Status ---
-  Name:   Brandon G.
-  Email:  brandon@client-abc.com
-  Source: gitego auto-rule for profile 'client-abc' (path: /Users/brandon/dev/work/)
----------------------------</code></pre>
-<p>Your identity, SSH key, and PAT have all been switched automatically and are ready to use.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> auto ~/dev/work/ work-ssh</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> auto ~/dev/personal/ personal</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When you <code>cd</code> into <code>~/dev/work/any-repo</code>, your <code>user.name</code>, <code>user.email</code>, and <code>sshCommand</code> will be automatically switched to the <code>work-ssh</code> profile.</p>
+<hr>
 </section>
-<section id="install-the-safety-net" class="level4">
-<h4 class="anchored" data-anchor-id="install-the-safety-net">5. Install the safety net</h4>
-<p>For any repositories that <em>don’t</em> have an auto-rule, you can install the pre-commit hook as a final safety measure.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/dev/some-other-project</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> init .</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">gitego</span> install-hook</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Now, if you try to commit in this repository with a mismatched profile, <code>gitego</code> will warn you and ask you to confirm before proceeding.</p>
 </section>
+<section id="commands" class="level2">
+<h2 class="anchored" data-anchor-id="commands">Commands</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Command</th>
+<th>Alias</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>gitego add &lt;name&gt;</code></td>
+<td></td>
+<td>Adds a new user profile.</td>
+</tr>
+<tr class="even">
+<td><code>gitego rm &lt;name&gt;</code></td>
+<td><code>remove</code></td>
+<td>Removes a saved user profile, asking for confirmation.</td>
+</tr>
+<tr class="odd">
+<td><code>gitego list</code></td>
+<td><code>ls</code></td>
+<td>Lists all saved user profiles and their attributes.</td>
+</tr>
+<tr class="even">
+<td><code>gitego use &lt;name&gt;</code></td>
+<td></td>
+<td>Sets a profile as the active global default.</td>
+</tr>
+<tr class="odd">
+<td><code>gitego auto &lt;path&gt; &lt;name&gt;</code></td>
+<td></td>
+<td>Sets a profile to be used automatically for a given directory path.</td>
+</tr>
+<tr class="even">
+<td><code>gitego status</code></td>
+<td></td>
+<td>Displays the current effective Git user and the source of the configuration.</td>
+</tr>
+<tr class="odd">
+<td><code>gitego edit &lt;name&gt;</code></td>
+<td></td>
+<td>Edits an existing user profile’s attributes.</td>
+</tr>
+<tr class="even">
+<td><code>gitego install-hook</code></td>
+<td></td>
+<td>Installs a pre-commit hook in the current repo to prevent misattributed commits.</td>
+</tr>
+<tr class="odd">
+<td><code>gitego completion &lt;shell&gt;</code></td>
+<td></td>
+<td>Generates shell completion scripts.</td>
+</tr>
+<tr class="even">
+<td><code>gitego --version</code></td>
+<td><code>-v</code></td>
+<td>Prints the application version.</td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="how-it-works" class="level2">
 <h2 class="anchored" data-anchor-id="how-it-works">How it works</h2>
-<p><code>gitego</code> uses two separate, powerful Git mechanisms to achieve its automation:</p>
-<ol type="1">
-<li><p><strong>For user &amp; SSH switching:</strong> The <code>gitego auto</code> command leverages a built-in Git feature called <code>includeIf</code>. It creates a profile-specific config file (e.g., <code>~/.gitego/profiles/work.gitconfig</code>) containing the correct <code>user.name</code>, <code>user.email</code>, and <code>core.sshCommand</code>, and then tells your main <code>~/.gitconfig</code> to only include that file when you are inside the specified directory.</p></li>
-<li><p><strong>For PAT &amp; HTTPS authentication:</strong> <code>gitego</code> registers itself as Git’s <strong>credential helper</strong>. When Git needs to authenticate for an <code>https://</code> remote, it calls <code>gitego credential</code>. Our tool then determines the correct context (based on auto-rules or the active profile), retrieves the corresponding PAT from your secure OS keychain, and feeds it back to Git. This is the most robust and secure method for HTTPS authentication.</p></li>
-</ol>
+<p><code>gitego</code> is built on top of two powerful, native Git features, ensuring it works seamlessly without fighting against Git’s own mechanisms.</p>
 <section id="visualizing-the-workflow" class="level3">
 <h3 class="anchored" data-anchor-id="visualizing-the-workflow">Visualizing the Workflow</h3>
 <pre class="mermaid"><code>graph TD
     A[User enters a directory] --&gt; B{Is there a gitego auto-rule for this path?};
-    B -- Yes --&gt; C[Git's 'includeIf' activates the profile-specific .gitconfig];
+    B -- Yes --&gt; C[Git's 'includeIf' directive activates the profile-specific .gitconfig];
     C --&gt; D{Switch user.name, user.email, and sshCommand};
-    B -- No --&gt; E[Use the global .gitconfig];
+    B -- No --&gt; E[Use the global .gitconfig settings];
     D --&gt; F[User runs 'git push' or 'git pull'];
     E --&gt; F;
     F --&gt; G{Is this an HTTPS remote?};
-    G -- Yes --&gt; H[Git calls 'gitego credential'];
-    H --&gt; I[gitego finds the active profile];
+    G -- Yes --&gt; H[Git calls 'gitego credential' helper];
+    H --&gt; I[gitego finds the active profile based on directory];
     I --&gt; J[Retrieve PAT from OS Keychain];
     J --&gt; K[Return credentials to Git];
     G -- No, it's SSH --&gt; L[Use the active sshCommand];
     K --&gt; M[Authentication successful];
-    L --&gt; M;
-</code></pre>
+    L --&gt; M;</code></pre>
+</section>
+<section id="identity-switching-includeif" class="level3">
+<h3 class="anchored" data-anchor-id="identity-switching-includeif">1. Identity Switching: <code>includeIf</code></h3>
+<p>For managing your commit identity (<code>user.name</code>, <code>user.email</code>) and SSH keys, <code>gitego</code> uses a Git feature called conditional includes.</p>
+<p>When you run <code>gitego auto ~/work work-ssh</code>:</p>
+<ol type="1">
+<li><code>gitego</code> creates a small, dedicated config file at <code>~/.gitego/profiles/work-ssh.gitconfig</code>.</li>
+<li>This file contains only the <code>[user]</code> and <code>[core]</code> information for that profile.</li>
+<li><code>gitego</code> then adds a block to your main <code>~/.gitconfig</code> file that looks like this: <code>ini     [includeIf "gitdir:~/work/"]         path = ~/.gitego/profiles/work-ssh.gitconfig</code></li>
+</ol>
+<p>This tells Git: “if the current repository is inside the <code>~/work/</code> directory, merge the settings from this other file.” It’s a native, fast, and highly reliable way to switch contexts.</p>
+</section>
+<section id="authentication-credential-helper" class="level3">
+<h3 class="anchored" data-anchor-id="authentication-credential-helper">2. Authentication: Credential Helper</h3>
+<p>For handling Personal Access Tokens (PATs) with HTTPS remotes, <code>gitego</code> acts as a <strong>Git credential helper</strong>.</p>
+<ol type="1">
+<li><strong>Configuration</strong>: The <code>git config --global credential.helper '!gitego credential'</code> command tells Git that whenever it needs a username or password for an <code>https://</code> URL, it should run the <code>gitego credential</code> command.</li>
+<li><strong>Execution</strong>: When you run <code>git push</code> or <code>git pull</code> on an HTTPS remote, Git executes <code>gitego credential</code> in the background and pipes it the protocol, host, and path information.</li>
+<li><strong>Context Resolution</strong>: The <code>gitego credential</code> command uses the same logic as <code>gitego status</code>: it checks the current working directory to find the active profile via auto-rules or the global default.</li>
+<li><strong>Secure Retrieval</strong>: It then fetches the corresponding PAT for that profile from your operating system’s native, secure keychain (macOS Keychain, Windows Credential Manager, or Linux Secret Service).</li>
+<li><strong>Response</strong>: Finally, it prints the username and PAT to standard output, which Git reads to complete the authentication.</li>
+</ol>
 </section>
 <section id="security-model" class="level3">
 <h3 class="anchored" data-anchor-id="security-model">Security Model</h3>
 <p><code>gitego</code> is designed with security as a top priority. Here’s how it keeps your credentials safe:</p>
 <ul>
 <li><strong>No Plaintext PATs:</strong> Personal Access Tokens (PATs) are never stored in plaintext in the configuration file.</li>
-<li><strong>Secure OS Keychain:</strong> <code>gitego</code> uses the native, secure keychain of your operating system (macOS Keychain, Windows Credential Manager, or the secret-service/dbus on Linux) to store and retrieve your PATs. This is the same secure storage that tools like Docker and other credential managers use.</li>
+<li><strong>Secure OS Keychain:</strong> <code>gitego</code> uses the native, secure keychain of your operating system to store and retrieve your PATs. This is the same secure storage that tools like Docker and other credential managers use.</li>
 <li><strong>Scoped Access:</strong> The credential helper only provides a token when Git explicitly requests it for an HTTPS operation. The token is passed directly to Git in memory and is not logged or stored elsewhere.</li>
 </ul>
 <p>By leveraging these native OS features and Git’s own robust mechanisms, <code>gitego</code> provides a seamless and secure way to manage your developer identities.</p>

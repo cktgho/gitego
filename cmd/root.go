@@ -9,6 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// The version of the application.
+// In a real-world application, this would be set at build time using ldflags.
+var version = "0.1.0"
+
+var (
+	// versionFlag is a flag to print the version and exit.
+	versionFlag bool
+)
+
 // rootCmd represents the base command when called without any subcommands.
 // It's the main entry point for the CLI application.
 var rootCmd = &cobra.Command{
@@ -19,23 +28,27 @@ var rootCmd = &cobra.Command{
 It allows you to define, switch between, and automatically apply different
 user profiles (user.name, user.email), SSH keys, and Personal Access Tokens
 depending on your current working directory or other contexts.`,
-	// This is the action that will run if no sub-commands are specified.
-	// For now, we will just print the help information.
 	Run: func(cmd *cobra.Command, args []string) {
-		// If the user just types "gitego", show them the help.
+		// If the version flag is passed, print the version and exit.
+		if versionFlag {
+			fmt.Printf("gitego version %s\n", version)
+			return
+		}
+		// Otherwise, show the help information.
 		cmd.Help()
 	},
+}
+
+func init() {
+	// Add the --version flag to the root command.
+	rootCmd.Flags().BoolVarP(&versionFlag, "version", "v", false, "Print gitego's version number")
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	// os.Exit finishes the program with a given status code.
-	// If Execute() returns an error, it will print the error to stderr
-	// and the program will exit with a status code of 1.
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your command '%s'", err)
+		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your command: %s", err)
 		os.Exit(1)
 	}
 }
-

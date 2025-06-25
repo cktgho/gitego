@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/bgreenwell/gitego/config"
@@ -20,26 +19,21 @@ var checkCommitCmd = &cobra.Command{
 
 		gitEmail, err := utils.GetEffectiveGitConfig("user.email")
 		if err != nil {
+			// Not in a git repo or no email set, nothing to check.
 			os.Exit(0)
 		}
 
 		cfg, err := config.Load()
 		if err != nil || len(cfg.AutoRules) == 0 {
+			// No gitego config or no rules, so nothing to check.
 			os.Exit(0)
 		}
 
-		currentDir, _ := os.Getwd()
-		var expectedProfileName string
-		for _, rule := range cfg.AutoRules {
-			rulePath, _ := filepath.Abs(strings.TrimSuffix(rule.Path, "/"))
-			currentAbsDir, _ := filepath.Abs(currentDir)
-			if strings.HasPrefix(currentAbsDir, rulePath) {
-				expectedProfileName = rule.Profile
-				break
-			}
-		}
+		// Use the new centralized function to find the expected profile.
+		expectedProfileName, _ := cfg.GetActiveProfileForCurrentDir()
 
-		if expectedProfileName == "" {
+		if expectedProfileName == "" || expectedProfileName == cfg.ActiveProfile {
+			// If no specific rule applies, or if the rule points to the default, don't warn.
 			os.Exit(0)
 		}
 
@@ -48,9 +42,12 @@ var checkCommitCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
+		// If the currently configured email matches the expected profile's email, all is well.
 		if gitEmail == expectedProfile.Email {
 			os.Exit(0)
 		}
+
+		// --- If we reach here, there is a mismatch. Warn the user. ---
 
 		fmt.Fprintf(os.Stderr, "\n--- gitego Safety Check ---\n")
 		fmt.Fprintf(os.Stderr, "Warning: Your effective Git email for this repo is '%s'.\n", gitEmail)
@@ -70,8 +67,6 @@ var checkCommitCmd = &cobra.Command{
 		}
 	},
 }
-
-// The local getEffectiveGitConfig function has been REMOVED from this file.
 
 func init() {
 	internalCmd.AddCommand(checkCommitCmd)

@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/bgreenwell/gitego/config"
+	"github.com/bgreenwell/gitego/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -33,11 +34,11 @@ credential helper, and preemptively updates the macOS Keychain.`,
 		}
 
 		// Action 1: Set the global git config for user name and email.
-		if err := setGitConfig("user.name", profile.Name); err != nil {
+		if err := utils.SetGlobalGitConfig("user.name", profile.Name); err != nil {
 			fmt.Printf("Error setting git user.name: %v\n", err)
 			return
 		}
-		if err := setGitConfig("user.email", profile.Email); err != nil {
+		if err := utils.SetGlobalGitConfig("user.email", profile.Email); err != nil {
 			fmt.Printf("Error setting git user.email: %v\n", err)
 			return
 		}

@@ -1,41 +1,28 @@
 // config/keyring_darwin.go
 
 // This file will ONLY be compiled on macOS.
+//go:build darwin
 
 package config
 
 import (
 	"fmt"
 	"os/exec"
-
-	keyring_other "github.com/zalando/go-keyring"
 )
 
-const gitegoKeyringService = "gitego"
-
-// SetToken, GetToken, and DeleteToken manage gitego's internal vault.
-func SetToken(profileName, token string) error {
-	return keyring_other.Set(gitegoKeyringService, profileName, token)
-}
-func GetToken(profileName string) (string, error) {
-	return keyring_other.Get(gitegoKeyringService, profileName)
-}
-func DeleteToken(profileName string) error {
-	return keyring_other.Delete(gitegoKeyringService, profileName)
-}
-
-// SetGitCredential directly overwrites the keychain entry that osxkeychain reads.
+// SetGitCredential directly overwrites the keychain entry that Git's osxkeychain helper reads.
 func SetGitCredential(username, token string) error {
+	// Attempt to delete any existing password for this account/server combination first.
 	_ = exec.Command("security", "delete-internet-password", "-a", username, "-s", "github.com").Run()
 
+	// Add the new password.
 	cmd := exec.Command(
 		"security",
 		"add-internet-password",
 		"-a", username,
 		"-s", "github.com",
-		"-r", "htps",
-		"-p", "443",
-		"-w", token,
+		"-r", "htps", // protocol
+		"-w", token, // password
 	)
 
 	output, err := cmd.CombinedOutput()

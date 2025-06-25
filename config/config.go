@@ -18,7 +18,7 @@ type Profile struct {
 	Email    string `yaml:"email"`
 	Username string `yaml:"username,omitempty"`
 	SSHKey   string `yaml:"ssh_key,omitempty"`
-	PAT      string `yaml:"-"` // The "-" tag is critical for security; it prevents this field from being serialized to YAML.
+	PAT      string `yaml:"-"`
 }
 
 // AutoRule represents a single directory-to-profile mapping.
@@ -35,15 +35,11 @@ type Config struct {
 }
 
 var (
-	// gitegoConfigPath is the path to gitego's own config file.
 	gitegoConfigPath string
-	// gitConfigPath is the path to the user's global .gitconfig file.
-	gitConfigPath string
-	// profilesDir is the path to the directory where gitego stores profile-specific gitconfigs.
-	profilesDir string
+	gitConfigPath    string
+	profilesDir      string
 )
 
-// init runs automatically, setting up our required paths.
 func init() {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -54,7 +50,7 @@ func init() {
 	gitConfigPath = filepath.Join(home, ".gitconfig")
 }
 
-// Load reads and decodes the gitego config.yaml file.
+// Load reads and decodes the gitego config.yaml file and validates it.
 func Load() (*Config, error) {
 	cfg := &Config{
 		Profiles: make(map[string]*Profile),
@@ -62,6 +58,7 @@ func Load() (*Config, error) {
 	data, err := os.ReadFile(gitegoConfigPath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			// It's not an error if the config file doesn't exist yet.
 			return cfg, nil
 		}
 		return nil, fmt.Errorf("could not read config file: %w", err)
@@ -69,7 +66,28 @@ func Load() (*Config, error) {
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("could not parse config file: %w", err)
 	}
+
+	// --- New Validation Logic ---
+	validateConfig(cfg)
+
 	return cfg, nil
+}
+
+// validateConfig checks for inconsistencies, like rules pointing to non-existent profiles.
+func validateConfig(cfg *Config) {
+	// Check if the global active profile is valid
+	if cfg.ActiveProfile != "" {
+		if _, exists := cfg.Profiles[cfg.ActiveProfile]; !exists {
+			fmt.Fprintf(os.Stderr, "Warning: Active profile '%s' not found. It may have been deleted.\n", cfg.ActiveProfile)
+		}
+	}
+
+	// Check all auto-switch rules
+	for _, rule := range cfg.AutoRules {
+		if _, exists := cfg.Profiles[rule.Profile]; !exists {
+			fmt.Fprintf(os.Stderr, "Warning: Auto-switch rule for path '%s' points to a non-existent profile '%s'.\n", rule.Path, rule.Profile)
+		}
+	}
 }
 
 // Save writes the gitego Config struct to the config.yaml file.
@@ -87,9 +105,45 @@ func (c *Config) Save() error {
 	return nil
 }
 
-// EnsureProfileGitconfig creates a dedicated .gitconfig file for a specific profile.
-// This file will contain the user.name and user.email for that profile.
-// Example file path: ~/.gitego/profiles/work.gitconfig
+func (c *Config) GetActiveProfileForCurrentDir() (profileName, source string) {
+	// 1. Default to the globally active profile, if any.
+	profileName = c.ActiveProfile
+	source = "Global gitego default"
+	if c.ActiveProfile == "" {
+		source = "No active gitego profile"
+	}
+
+	// 2. Check for a more specific auto-rule that matches the current directory.
+	if len(c.AutoRules) > 0 {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			// If we can't get the CWD, we can't check rules, so we just return the default.
+			return
+		}
+		currentAbsDir, err := filepath.Abs(currentDir)
+		if err != nil {
+			return
+		}
+		// Find the most specific (longest) matching path.
+		bestMatchPath := ""
+		for _, rule := range c.AutoRules {
+			rulePath, err := filepath.Abs(strings.TrimSuffix(rule.Path, "/"))
+			if err != nil {
+				continue // Skip invalid paths in config.
+			}
+			if strings.HasPrefix(currentAbsDir, rulePath) {
+				// If this path is more specific than the last one we found, use it.
+				if len(rulePath) > len(bestMatchPath) {
+					bestMatchPath = rulePath
+					profileName = rule.Profile
+					source = fmt.Sprintf("gitego auto-rule for profile '%s'", rule.Profile)
+				}
+			}
+		}
+	}
+	return
+}
+
 func EnsureProfileGitconfig(profileName string, profile *Profile) error {
 	// Ensure the directory for these profile-specific configs exists.
 	if err := os.MkdirAll(profilesDir, 0755); err != nil {
@@ -113,8 +167,6 @@ func EnsureProfileGitconfig(profileName string, profile *Profile) error {
 	return os.WriteFile(filePath, []byte(content), 0644)
 }
 
-// AddIncludeIf modifies the user's global ~/.gitconfig to include our new profile config.
-// It adds an [includeIf "gitdir:path/to/work/"] directive.
 func AddIncludeIf(profileName string, dirPath string) error {
 	profileConfigPath := filepath.Join(profilesDir, fmt.Sprintf("%s.gitconfig", profileName))
 	// We use tilde for user-friendly display, but filepath.Join for actual path logic.
