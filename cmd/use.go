@@ -51,31 +51,25 @@ credential helper, and preemptively updates the macOS Keychain.`,
 
 		// Action 3: If on macOS, also preemptively set the credential
 		// in the keychain to prevent the osxkeychain helper from prompting.
-		fmt.Println("[DEBUG] Checking if running on macOS...")
 		if runtime.GOOS == "darwin" {
-			fmt.Println("[DEBUG] macOS detected. Attempting to pre-set keychain credential.")
 
 			token, err := config.GetToken(profileName)
 			// Only proceed if the profile has a token.
 			if err != nil {
-				fmt.Printf("[DEBUG] No token found in gitego's vault for profile '%s'. Skipping keychain update.\n", profileName)
 				// We still print the final success message because the main goal was achieved.
 				fmt.Printf("✓ Set active profile to '%s'.\n", profileName)
 				return
 			}
 
 			if profile.Username == "" {
-				fmt.Println("[DEBUG] Profile username is empty. This is required to set the keychain entry correctly. Skipping update.")
 				// We still print the final success message.
 				fmt.Printf("✓ Set active profile to '%s'.\n", profileName)
 				return
 			}
 
-			fmt.Printf("[DEBUG] Found token for profile '%s'. Username: '%s'. Attempting to write to keychain...\n", profileName, profile.Username)
 			if err := config.SetGitCredential(profile.Username, token); err != nil {
 				fmt.Printf("Warning: Failed to pre-set keychain credential: %v\n", err)
 			} else {
-				fmt.Println("[DEBUG] Successfully called SetGitCredential.")
 			}
 		}
 
