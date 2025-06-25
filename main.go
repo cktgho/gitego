@@ -1,8 +1,14 @@
+// main.go
+
 package main
 
-import "fmt"
+import (
+	"github.com/bgreenwell/gitego/cmd" // IMPORTANT: Replace with your module path!
+)
 
 func main() {
-    fmt.Println("gitego: The Git Identity Manager - coming soon!")
+	// All the application logic now lives in the cmd package.
+	// This keeps main.go clean and simple.
+	cmd.Execute()
 }
 
