@@ -49,7 +49,7 @@ credential helper, and preemptively updates the macOS Keychain.`,
 			return
 		}
 
-		// Action 3 (The Fix): If on macOS, also preemptively set the credential
+		// Action 3: If on macOS, also preemptively set the credential
 		// in the keychain to prevent the osxkeychain helper from prompting.
 		fmt.Println("[DEBUG] Checking if running on macOS...")
 		if runtime.GOOS == "darwin" {
