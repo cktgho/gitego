@@ -232,25 +232,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="how-it-works">How it works</h2>
 <p><code>gitego</code> is built on top of two powerful, native Git features, ensuring it works seamlessly without fighting against Git’s own mechanisms.</p>
 <section id="visualizing-the-workflow" class="level3">
-<h3 class="anchored" data-anchor-id="visualizing-the-workflow">Visualizing the Workflow</h3>
-<pre class="mermaid"><code>graph TD
-    A[User enters a directory] --&gt; B{Is there a gitego auto-rule for this path?};
-    B -- Yes --&gt; C[Git's 'includeIf' directive activates the profile-specific .gitconfig];
-    C --&gt; D{Switch user.name, user.email, and sshCommand};
-    B -- No --&gt; E[Use the global .gitconfig settings];
-    D --&gt; F[User runs 'git push' or 'git pull'];
+<h3 class="anchored" data-anchor-id="visualizing-the-workflow">Visualizing the workflow</h3>
+<pre class="mermaid"><code>graph LR
+    A[Enter Directory] --&gt; B{Auto-rule?};
+    B -- Yes --&gt; C[Activate Profile .gitconfig];
+    C --&gt; D[Switch user/email/SSH];
+    B -- No --&gt; E[Use Global .gitconfig];
+    D --&gt; F[git push/pull];
     E --&gt; F;
-    F --&gt; G{Is this an HTTPS remote?};
-    G -- Yes --&gt; H[Git calls 'gitego credential' helper];
-    H --&gt; I[gitego finds the active profile based on directory];
-    I --&gt; J[Retrieve PAT from OS Keychain];
-    J --&gt; K[Return credentials to Git];
-    G -- No, it's SSH --&gt; L[Use the active sshCommand];
-    K --&gt; M[Authentication successful];
-    L --&gt; M;</code></pre>
+    F --&gt; G{HTTPS?};
+    G -- Yes --&gt; H[Git calls gitego helper];
+    H --&gt; I[gitego finds profile];
+    I --&gt; J[Get PAT from Keychain];
+    J --&gt; K[Return credentials];
+    G -- No --&gt; L[Use sshCommand];
+    K --&gt; M[Auth OK];
+    L --&gt; M[Auth OK];</code></pre>
 </section>
 <section id="identity-switching-includeif" class="level3">
-<h3 class="anchored" data-anchor-id="identity-switching-includeif">1. Identity Switching: <code>includeIf</code></h3>
+<h3 class="anchored" data-anchor-id="identity-switching-includeif">1. Identity switching: <code>includeIf</code></h3>
 <p>For managing your commit identity (<code>user.name</code>, <code>user.email</code>) and SSH keys, <code>gitego</code> uses a Git feature called conditional includes.</p>
 <p>When you run <code>gitego auto ~/work work-ssh</code>:</p>
 <ol type="1">
@@ -261,7 +261,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>This tells Git: “if the current repository is inside the <code>~/work/</code> directory, merge the settings from this other file.” It’s a native, fast, and highly reliable way to switch contexts.</p>
 </section>
 <section id="authentication-credential-helper" class="level3">
-<h3 class="anchored" data-anchor-id="authentication-credential-helper">2. Authentication: Credential Helper</h3>
+<h3 class="anchored" data-anchor-id="authentication-credential-helper">2. Authentication: credential helper</h3>
 <p>For handling Personal Access Tokens (PATs) with HTTPS remotes, <code>gitego</code> acts as a <strong>Git credential helper</strong>.</p>
 <ol type="1">
 <li><strong>Configuration</strong>: The <code>git config --global credential.helper '!gitego credential'</code> command tells Git that whenever it needs a username or password for an <code>https://</code> URL, it should run the <code>gitego credential</code> command.</li>
@@ -272,7 +272,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ol>
 </section>
 <section id="security-model" class="level3">
-<h3 class="anchored" data-anchor-id="security-model">Security Model</h3>
+<h3 class="anchored" data-anchor-id="security-model">Security model</h3>
 <p><code>gitego</code> is designed with security as a top priority. Here’s how it keeps your credentials safe:</p>
 <ul>
 <li><strong>No Plaintext PATs:</strong> Personal Access Tokens (PATs) are never stored in plaintext in the configuration file.</li>

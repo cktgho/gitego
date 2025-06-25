@@ -131,7 +131,7 @@ When you `cd` into `~/dev/work/any-repo`, your `user.name`, `user.email`, and `s
 
 `gitego` is built on top of two powerful, native Git features, ensuring it works seamlessly without fighting against Git's own mechanisms.
 
-### Visualizing the Workflow
+### Visualizing the workflow
 
 ```mermaid
 graph LR
@@ -151,7 +151,7 @@ graph LR
     L --> M[Auth OK];
 ```
 
-### 1\. Identity Switching: `includeIf`
+### 1\. Identity switching: `includeIf`
 
 For managing your commit identity (`user.name`, `user.email`) and SSH keys, `gitego` uses a Git feature called conditional includes.
 
@@ -167,7 +167,7 @@ When you run `gitego auto ~/work work-ssh`:
 
 This tells Git: "if the current repository is inside the `~/work/` directory, merge the settings from this other file." It's a native, fast, and highly reliable way to switch contexts.
 
-### 2\. Authentication: Credential Helper
+### 2\. Authentication: credential helper
 
 For handling Personal Access Tokens (PATs) with HTTPS remotes, `gitego` acts as a **Git credential helper**.
 
@@ -177,7 +177,7 @@ For handling Personal Access Tokens (PATs) with HTTPS remotes, `gitego` acts as 
 4.  **Secure Retrieval**: It then fetches the corresponding PAT for that profile from your operating system's native, secure keychain (macOS Keychain, Windows Credential Manager, or Linux Secret Service).
 5.  **Response**: Finally, it prints the username and PAT to standard output, which Git reads to complete the authentication.
 
-### Security Model
+### Security model
 
 `gitego` is designed with security as a top priority. Here's how it keeps your credentials safe:
 
