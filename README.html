@@ -201,6 +201,35 @@ work-ssh   &amp;#9;Brandon Greenwell    &amp;#9;brandon.work@company.com    &amp
 <li><p><strong>For user &amp; SSH switching:</strong> The <code>gitego auto</code> command leverages a built-in Git feature called <code>includeIf</code>. It creates a profile-specific config file (e.g., <code>~/.gitego/profiles/work.gitconfig</code>) containing the correct <code>user.name</code>, <code>user.email</code>, and <code>core.sshCommand</code>, and then tells your main <code>~/.gitconfig</code> to only include that file when you are inside the specified directory.</p></li>
 <li><p><strong>For PAT &amp; HTTPS authentication:</strong> <code>gitego</code> registers itself as Git’s <strong>credential helper</strong>. When Git needs to authenticate for an <code>https://</code> remote, it calls <code>gitego credential</code>. Our tool then determines the correct context (based on auto-rules or the active profile), retrieves the corresponding PAT from your secure OS keychain, and feeds it back to Git. This is the most robust and secure method for HTTPS authentication.</p></li>
 </ol>
+<section id="visualizing-the-workflow" class="level3">
+<h3 class="anchored" data-anchor-id="visualizing-the-workflow">Visualizing the Workflow</h3>
+<pre class="mermaid"><code>graph TD
+    A[User enters a directory] --&gt; B{Is there a gitego auto-rule for this path?};
+    B -- Yes --&gt; C[Git's 'includeIf' activates the profile-specific .gitconfig];
+    C --&gt; D{Switch user.name, user.email, and sshCommand};
+    B -- No --&gt; E[Use the global .gitconfig];
+    D --&gt; F[User runs 'git push' or 'git pull'];
+    E --&gt; F;
+    F --&gt; G{Is this an HTTPS remote?};
+    G -- Yes --&gt; H[Git calls 'gitego credential'];
+    H --&gt; I[gitego finds the active profile];
+    I --&gt; J[Retrieve PAT from OS Keychain];
+    J --&gt; K[Return credentials to Git];
+    G -- No, it's SSH --&gt; L[Use the active sshCommand];
+    K --&gt; M[Authentication successful];
+    L --&gt; M;
+</code></pre>
+</section>
+<section id="security-model" class="level3">
+<h3 class="anchored" data-anchor-id="security-model">Security Model</h3>
+<p><code>gitego</code> is designed with security as a top priority. Here’s how it keeps your credentials safe:</p>
+<ul>
+<li><strong>No Plaintext PATs:</strong> Personal Access Tokens (PATs) are never stored in plaintext in the configuration file.</li>
+<li><strong>Secure OS Keychain:</strong> <code>gitego</code> uses the native, secure keychain of your operating system (macOS Keychain, Windows Credential Manager, or the secret-service/dbus on Linux) to store and retrieve your PATs. This is the same secure storage that tools like Docker and other credential managers use.</li>
+<li><strong>Scoped Access:</strong> The credential helper only provides a token when Git explicitly requests it for an HTTPS operation. The token is passed directly to Git in memory and is not logged or stored elsewhere.</li>
+</ul>
+<p>By leveraging these native OS features and Git’s own robust mechanisms, <code>gitego</code> provides a seamless and secure way to manage your developer identities.</p>
+</section>
 </section>
 <section id="contributing" class="level2">
 <h2 class="anchored" data-anchor-id="contributing">Contributing</h2>

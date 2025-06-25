@@ -169,6 +169,36 @@ Now, if you try to commit in this repository with a mismatched profile, `gitego`
 
 2.  **For PAT & HTTPS authentication:** `gitego` registers itself as Git's **credential helper**. When Git needs to authenticate for an `https://` remote, it calls `gitego credential`. Our tool then determines the correct context (based on auto-rules or the active profile), retrieves the corresponding PAT from your secure OS keychain, and feeds it back to Git. This is the most robust and secure method for HTTPS authentication.
 
+### Visualizing the Workflow
+
+```mermaid
+graph TD
+    A[User enters a directory] --> B{Is there a gitego auto-rule for this path?};
+    B -- Yes --> C[Git's 'includeIf' activates the profile-specific .gitconfig];
+    C --> D{Switch user.name, user.email, and sshCommand};
+    B -- No --> E[Use the global .gitconfig];
+    D --> F[User runs 'git push' or 'git pull'];
+    E --> F;
+    F --> G{Is this an HTTPS remote?};
+    G -- Yes --> H[Git calls 'gitego credential'];
+    H --> I[gitego finds the active profile];
+    I --> J[Retrieve PAT from OS Keychain];
+    J --> K[Return credentials to Git];
+    G -- No, it's SSH --> L[Use the active sshCommand];
+    K --> M[Authentication successful];
+    L --> M;
+```
+
+### Security Model
+
+`gitego` is designed with security as a top priority. Here's how it keeps your credentials safe:
+
+  * **No Plaintext PATs:** Personal Access Tokens (PATs) are never stored in plaintext in the configuration file.
+  * **Secure OS Keychain:** `gitego` uses the native, secure keychain of your operating system (macOS Keychain, Windows Credential Manager, or the secret-service/dbus on Linux) to store and retrieve your PATs. This is the same secure storage that tools like Docker and other credential managers use.
+  * **Scoped Access:** The credential helper only provides a token when Git explicitly requests it for an HTTPS operation. The token is passed directly to Git in memory and is not logged or stored elsewhere.
+
+By leveraging these native OS features and Git's own robust mechanisms, `gitego` provides a seamless and secure way to manage your developer identities.
+
 ## Contributing
 
 Contributions are welcome\! Please feel free to open an issue or submit a pull request.
