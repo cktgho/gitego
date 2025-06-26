@@ -89,7 +89,7 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	if err := autoCmd.Run(); err != nil {
 		t.Fatalf("gitego auto command failed: %v", err)
 	}
-	
+
 	// Assert that .gitconfig has the includeIf rule
 	gitConfigBytes, _ = os.ReadFile(gitConfigPath)
 	gitConfigContent = string(gitConfigBytes)
@@ -118,4 +118,3 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 		t.Fatal("The includeIf rule was not cleaned up from .gitconfig by 'rm' command.")
 	}
 }
-

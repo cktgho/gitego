@@ -1,6 +1,9 @@
 # .golangci.yml
-# A simplified configuration file for golangci-lint to diagnose parsing issues.
+
+# Configuration file for golangci-lint to diagnose parsing issues.
+
 version: "2"
+
 run:
   # Set a timeout for the linter. 5m is a generous default.
   timeout: 5m
@@ -9,10 +12,33 @@ run:
   skip-dirs:
     - vendor/
 
+linters-settings:
+  # Configure depguard to allow necessary imports for our project.
+  depguard:
+    rules:
+      main:
+        allow:
+          - $standard
+          - github.com/bgreenwell/gitego
+          - github.com/spf13
+          - github.com/zalando/go-keyring
+          - gopkg.in/yaml.v3
+  # Increase the complexity tolerance slightly for now.
+  cyclop:
+    max-complexity: 15
+  funlen:
+    lines: 80 # Allow functions to be a bit longer, especially in tests.
+    statements: 50
+  gocognit:
+    min-complexity: 40 # Increase the cognitive complexity limit.
+  lll:
+    line-length: 120
+
 # Linters to enable. We start with a standard, essential set.
 linters:
   default: fast
-
+  disable:
+    - gochecknoinits
 
 # How to report issues.
 issues:

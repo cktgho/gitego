@@ -90,7 +90,7 @@ func TestCheckCommitCommand(t *testing.T) {
 		if exitCode != 1 {
 			t.Errorf("Expected exit code 1 when user aborts, but got %d", exitCode)
 		}
-		if !strings.Contains(stderr, "Commit aborted by user") {
+		if !strings.Contains(stderr, "Commit aborted by user.") {
 			t.Errorf("Expected 'aborted' message in stderr, but it was missing. Got:\n%s", stderr)
 		}
 	})
@@ -102,7 +102,7 @@ func TestCheckCommitCommand(t *testing.T) {
 		if exitCode != 0 {
 			t.Errorf("Expected exit code 0 when user proceeds, but got %d", exitCode)
 		}
-		if !strings.Contains(stderr, "Commit proceeding with mismatched user") {
+		if !strings.Contains(stderr, "Commit proceeding with mismatched user.") {
 			t.Errorf("Expected 'proceeding' message in stderr, but it was missing. Got:\n%s", stderr)
 		}
 	})
