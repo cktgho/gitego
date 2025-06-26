@@ -212,25 +212,20 @@ func EnsureProfileGitconfig(profileName string, profile *Profile) error {
 // AddIncludeIf modifies the user's global ~/.gitconfig to include our new profile config.
 // It adds an [includeIf "gitdir:path/to/work/"] directive.
 func AddIncludeIf(profileName string, dirPath string) error {
-	// --- Ensure BOTH paths use forward slashes for Git's parser ---
-
-	// 1. Path to the profile-specific .gitconfig file (e.g., ~/.gitego/profiles/work.gitconfig)
+	// Use ToSlash for cross-platform compatible paths FOR BOTH check and write.
 	profileConfigPath := filepath.ToSlash(filepath.Join(profilesDir, fmt.Sprintf("%s.gitconfig", profileName)))
-
-	// 2. The conditional directory path.
 	cleanDirPath := filepath.ToSlash(dirPath)
 	if !strings.HasSuffix(cleanDirPath, "/") {
 		cleanDirPath += "/"
 	}
 
-	// This is the line we want to add to the global .gitconfig
 	includeLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", cleanDirPath, profileConfigPath)
 
-	// The display path for user feedback remains user-friendly.
+	// User-friendly display path for feedback.
 	displayPath := filepath.Join("~/.gitego/profiles", fmt.Sprintf("%s.gitconfig", profileName))
 	displayLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", cleanDirPath, displayPath)
 
-	// Read the global .gitconfig file to check if the line already exists.
+	// Check if the rule already exists by reading the global .gitconfig.
 	file, err := os.Open(gitConfigPath)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("could not open global .gitconfig: %w", err)
@@ -239,14 +234,16 @@ func AddIncludeIf(profileName string, dirPath string) error {
 		defer file.Close()
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			if strings.Contains(scanner.Text(), profileConfigPath) {
-				fmt.Printf("✓ Auto-switch rule for profile '%s' already exists.\n", profileName)
+			// --- FIX: Normalize the line from the file before comparing ---
+			lineFromConfig := filepath.ToSlash(scanner.Text())
+			if strings.Contains(lineFromConfig, profileConfigPath) {
+				fmt.Printf("✓ Auto-switch rule for profile '%s' on path '%s' already exists.\n", profileName, dirPath)
 				return nil
 			}
 		}
 	}
 
-	// Append the new includeIf directive to the end of the global .gitconfig.
+	// Append the new includeIf directive.
 	f, err := os.OpenFile(gitConfigPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("could not open .gitconfig for writing: %w", err)

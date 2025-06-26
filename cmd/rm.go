@@ -8,12 +8,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bgreenwell/gitego/config" // IMPORTANT: Use your module path
+	"github.com/bgreenwell/gitego/config"
 	"github.com/spf13/cobra"
 )
 
 var (
-	// forceFlag will bypass the confirmation prompt for the rm command.
 	forceFlag bool
 )
 
@@ -21,12 +20,10 @@ var (
 var rmCmd = &cobra.Command{
 	Use:   "rm <profile_name>",
 	Short: "Removes a saved user profile.",
-	Long: `Removes a profile and its associated credentials from the gitego configuration.
-This is a destructive operation. By default, you will be prompted for confirmation.
-Use the --force flag to bypass this prompt.`,
+	Long: `Removes a profile, its associated credentials, and any auto-switch rules
+that use it from the gitego configuration. This is a destructive operation.`,
 	Aliases: []string{"remove"},
-	// Use Cobra's built-in argument validation to ensure exactly one argument is passed.
-	Args: cobra.ExactArgs(1),
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		profileName := args[0]
 
@@ -41,17 +38,26 @@ Use the --force flag to bypass this prompt.`,
 			return
 		}
 
-		// Add confirmation logic.
 		if !forceFlag {
 			fmt.Printf("Are you sure you want to remove the profile '%s'? This cannot be undone. [y/N]: ", profileName)
 			reader := bufio.NewReader(os.Stdin)
 			response, _ := reader.ReadString('\n')
-
 			if strings.TrimSpace(strings.ToLower(response)) != "y" {
 				fmt.Println("Removal cancelled.")
 				return
 			}
 		}
+
+		// Create a new slice to hold the rules we want to keep.
+		var keptRules []*config.AutoRule
+		for _, rule := range cfg.AutoRules {
+			// If the rule's profile does NOT match the one being removed, keep it.
+			if rule.Profile != profileName {
+				keptRules = append(keptRules, rule)
+			}
+		}
+		// Replace the old slice with the new, filtered one.
+		cfg.AutoRules = keptRules
 
 		// Delete the profile from the map.
 		delete(cfg.Profiles, profileName)
@@ -70,7 +76,6 @@ Use the --force flag to bypass this prompt.`,
 }
 
 func init() {
-	// Add the --force flag.
 	rmCmd.Flags().BoolVarP(&forceFlag, "force", "f", false, "Force removal without confirmation")
 	rootCmd.AddCommand(rmCmd)
 }
