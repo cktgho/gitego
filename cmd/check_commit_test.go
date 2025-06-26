@@ -15,13 +15,11 @@ import (
 func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput string) (exitCode int, stderr string) {
 	t.Helper()
 
-	exitCode = -1 // Default to a value that indicates it was not called.
+	// Use a channel to reliably signal that the mock exit function was called.
+	exitSignal := make(chan int, 1)
 
-	// Mock the exit function. Instead of calling os.Exit, we panic.
-	// This immediately stops the execution flow, just like os.Exit would.
 	mockExit := func(code int) {
-		exitCode = code
-		panic("os.Exit called")
+		exitSignal <- code
 	}
 
 	var stderrBuf bytes.Buffer
@@ -35,35 +33,27 @@ func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput st
 		},
 		loadConfig: func() (*config.Config, error) { return cfg, nil },
 		stdin:      strings.NewReader(userInput),
-		stderr:     &stderrBuf, // Always capture stderr
+		stderr:     &stderrBuf,
 		exit:       mockExit,
 	}
 
-	// We use defer to recover from the panic we triggered in our mock exit function.
-	// This allows the test to continue and check the results.
-	defer func() {
-		if r := recover(); r != nil {
-			if r != "os.Exit called" {
-				// If it's a different panic, we should re-throw it.
-				panic(r)
-			}
-		}
-	}()
-
-	// Execute the command's logic synchronously.
+	// Execute the command's logic.
 	runner.run(&cobra.Command{}, []string{})
+
+	// Block until the mock exit function has been called.
+	// This makes the test synchronous and reliable.
+	exitCode = <-exitSignal
 
 	return exitCode, stderrBuf.String()
 }
 
 func TestCheckCommitCommand(t *testing.T) {
-	// Setup a base mock config
+	// Setup a base mock config.
 	mockCfg := &config.Config{
 		Profiles: map[string]*config.Profile{
 			"work": {Email: "work@example.com"},
 		},
 		AutoRules: []*config.AutoRule{
-			// The path needs to match the current dir for the test to activate the rule.
 			{Path: ".", Profile: "work"},
 		},
 	}
@@ -76,7 +66,7 @@ func TestCheckCommitCommand(t *testing.T) {
 	})
 
 	t.Run("when emails mismatch and user aborts", func(t *testing.T) {
-		// User types "y" or just presses Enter
+		// User types "y" or just presses Enter.
 		exitCode, stderr := runCheckCommitTest(t, mockCfg, "other@email.com", "\n")
 
 		if exitCode != 1 {
@@ -88,7 +78,7 @@ func TestCheckCommitCommand(t *testing.T) {
 	})
 
 	t.Run("when emails mismatch and user proceeds", func(t *testing.T) {
-		// User types "n"
+		// User types "n".
 		exitCode, stderr := runCheckCommitTest(t, mockCfg, "other@email.com", "n\n")
 
 		if exitCode != 0 {
