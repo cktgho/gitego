@@ -222,7 +222,7 @@ func AddIncludeIf(profileName string, dirPath string) error {
 	includeLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", cleanDirPath, profileConfigPath)
 
 	// User-friendly display path for feedback.
-	displayPath := filepath.Join("~/.gitego/profiles", fmt.Sprintf("%s.gitconfig", profileName))
+	displayPath := filepath.ToSlash(filepath.Join("~/.gitego/profiles", fmt.Sprintf("%s.gitconfig", profileName)))
 	displayLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", cleanDirPath, displayPath)
 
 	// Check if the rule already exists by reading the global .gitconfig.
