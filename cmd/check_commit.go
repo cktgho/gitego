@@ -38,7 +38,6 @@ func (r *checkCommitRunner) run(cmd *cobra.Command, args []string) {
 
 	expectedProfileName, _ := cfg.GetActiveProfileForCurrentDir()
 
-	// No specific rule applies, so no check is needed.
 	if expectedProfileName == "" || expectedProfileName == cfg.ActiveProfile {
 		r.exit(0)
 		return
@@ -50,31 +49,31 @@ func (r *checkCommitRunner) run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// If emails match, everything is correct.
 	if gitEmail == expectedProfile.Email {
 		r.exit(0)
 		return
 	}
 
 	// --- Mismatch found, prompt the user ---
-	fmt.Fprintf(r.stderr, "\n--- gitego Safety Check ---\n")
-	fmt.Fprintf(r.stderr, "Warning: Your effective Git email for this repo is '%s'.\n", gitEmail)
-	fmt.Fprintf(r.stderr, "However, the profile expected for this directory is '%s' ('%s').\n", expectedProfileName, expectedProfile.Email)
-	fmt.Fprintf(r.stderr, "---------------------------\n")
-	fmt.Fprintf(r.stderr, "Do you want to abort the commit? [Y/n]: ")
+	_, _ = fmt.Fprintf(r.stderr, "\n--- gitego Safety Check ---\n")
+	_, _ = fmt.Fprintf(r.stderr, "Warning: Your effective Git email for this repo is '%s'.\n", gitEmail)
+	_, _ = fmt.Fprintf(r.stderr, "However, the profile expected for this directory is '%s' ('%s').\n", expectedProfileName, expectedProfile.Email)
+	_, _ = fmt.Fprintf(r.stderr, "---------------------------\n")
+	_, _ = fmt.Fprintf(r.stderr, "Do you want to abort the commit? [Y/n]: ")
 
 	reader := bufio.NewReader(r.stdin)
 	response, _ := reader.ReadString('\n')
 
 	if strings.TrimSpace(strings.ToLower(response)) == "n" {
-		fmt.Fprintln(r.stderr, "Commit proceeding with mismatched user.")
+		_, _ = fmt.Fprintln(r.stderr, "Commit proceeding with mismatched user.")
 		r.exit(0)
 	} else {
-		fmt.Fprintln(r.stderr, "Commit aborted by user.")
+		_, _ = fmt.Fprintln(r.stderr, "Commit aborted by user.")
 		r.exit(1)
 	}
 }
 
+// checkCommitCmd represents the check-commit command.
 var checkCommitCmd = &cobra.Command{
 	Use:    "check-commit",
 	Short:  "Internal: checks commit author against expected profile.",
