@@ -4,6 +4,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -12,59 +13,81 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// checkCommitRunner holds dependencies for mocking.
+type checkCommitRunner struct {
+	getGitConfig func(string) (string, error)
+	loadConfig   func() (*config.Config, error)
+	stdin        io.Reader
+	stderr       io.Writer
+	exit         func(int)
+}
+
+// run is the core logic for the check-commit command.
+func (r *checkCommitRunner) run(cmd *cobra.Command, args []string) {
+	gitEmail, err := r.getGitConfig("user.email")
+	if err != nil {
+		r.exit(0)
+		return
+	}
+
+	cfg, err := r.loadConfig()
+	if err != nil || len(cfg.AutoRules) == 0 {
+		r.exit(0)
+		return
+	}
+
+	expectedProfileName, _ := cfg.GetActiveProfileForCurrentDir()
+
+	// No specific rule applies, so no check is needed.
+	if expectedProfileName == "" || expectedProfileName == cfg.ActiveProfile {
+		r.exit(0)
+		return
+	}
+
+	expectedProfile, exists := cfg.Profiles[expectedProfileName]
+	if !exists {
+		r.exit(0) // Rule points to a non-existent profile, let validation handle warnings.
+		return
+	}
+
+	// If emails match, everything is correct.
+	if gitEmail == expectedProfile.Email {
+		r.exit(0)
+		return
+	}
+
+	// --- Mismatch found, prompt the user ---
+	fmt.Fprintf(r.stderr, "\n--- gitego Safety Check ---\n")
+	fmt.Fprintf(r.stderr, "Warning: Your effective Git email for this repo is '%s'.\n", gitEmail)
+	fmt.Fprintf(r.stderr, "However, the profile expected for this directory is '%s' ('%s').\n", expectedProfileName, expectedProfile.Email)
+	fmt.Fprintf(r.stderr, "---------------------------\n")
+	fmt.Fprintf(r.stderr, "Do you want to abort the commit? [Y/n]: ")
+
+	reader := bufio.NewReader(r.stdin)
+	response, _ := reader.ReadString('\n')
+
+	if strings.TrimSpace(strings.ToLower(response)) == "n" {
+		fmt.Fprintln(r.stderr, "Commit proceeding with mismatched user.")
+		r.exit(0)
+	} else {
+		fmt.Fprintln(r.stderr, "Commit aborted by user.")
+		r.exit(1)
+	}
+}
+
 var checkCommitCmd = &cobra.Command{
-	Use:   "check-commit",
-	Short: "Internal: checks commit author against expected profile.",
+	Use:    "check-commit",
+	Short:  "Internal: checks commit author against expected profile.",
+	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		gitEmail, err := utils.GetEffectiveGitConfig("user.email")
-		if err != nil {
-			// Not in a git repo or no email set, nothing to check.
-			os.Exit(0)
+		runner := &checkCommitRunner{
+			getGitConfig: utils.GetEffectiveGitConfig,
+			loadConfig:   config.Load,
+			stdin:        os.Stdin,
+			stderr:       os.Stderr,
+			exit:         os.Exit,
 		}
-
-		cfg, err := config.Load()
-		if err != nil || len(cfg.AutoRules) == 0 {
-			// No gitego config or no rules, so nothing to check.
-			os.Exit(0)
-		}
-
-		// Use the new centralized function to find the expected profile.
-		expectedProfileName, _ := cfg.GetActiveProfileForCurrentDir()
-
-		if expectedProfileName == "" || expectedProfileName == cfg.ActiveProfile {
-			// If no specific rule applies, or if the rule points to the default, don't warn.
-			os.Exit(0)
-		}
-
-		expectedProfile, exists := cfg.Profiles[expectedProfileName]
-		if !exists {
-			os.Exit(0)
-		}
-
-		// If the currently configured email matches the expected profile's email, all is well.
-		if gitEmail == expectedProfile.Email {
-			os.Exit(0)
-		}
-
-		// --- If we reach here, there is a mismatch. Warn the user. ---
-
-		fmt.Fprintf(os.Stderr, "\n--- gitego Safety Check ---\n")
-		fmt.Fprintf(os.Stderr, "Warning: Your effective Git email for this repo is '%s'.\n", gitEmail)
-		fmt.Fprintf(os.Stderr, "However, the profile expected for this directory is '%s' ('%s').\n", expectedProfileName, expectedProfile.Email)
-		fmt.Fprintf(os.Stderr, "---------------------------\n")
-		fmt.Fprintf(os.Stderr, "Do you want to abort the commit? [Y/n]: ")
-
-		reader := bufio.NewReader(os.Stdin)
-		response, _ := reader.ReadString('\n')
-
-		if strings.TrimSpace(strings.ToLower(response)) == "n" {
-			fmt.Fprintln(os.Stderr, "Commit proceeding with mismatched user.")
-			os.Exit(0)
-		} else {
-			fmt.Fprintln(os.Stderr, "Commit aborted by user.")
-			os.Exit(1)
-		}
+		runner.run(cmd, args)
 	},
 }
 

@@ -3,13 +3,66 @@ package cmd
 
 import (
 	"fmt"
-	"os/exec"
 	"runtime"
 
 	"github.com/bgreenwell/gitego/config"
 	"github.com/bgreenwell/gitego/utils"
 	"github.com/spf13/cobra"
 )
+
+// useRunner holds the dependencies for the use command for mocking.
+type useRunner struct {
+	load             func() (*config.Config, error)
+	save             func(*config.Config) error
+	setGlobalGit     func(string, string) error
+	setGitCredential func(string, string) error
+	getOS            func() string
+	getToken         func(string) (string, error)
+}
+
+// run is the core logic for the use command.
+func (u *useRunner) run(cmd *cobra.Command, args []string) {
+	profileName := args[0]
+	cfg, err := u.load()
+	if err != nil {
+		fmt.Printf("Error loading config: %v\n", err)
+		return
+	}
+
+	profile, exists := cfg.Profiles[profileName]
+	if !exists {
+		fmt.Printf("Error: Profile '%s' not found.\n", profileName)
+		return
+	}
+
+	// Action 1: Set the global git config for user name and email.
+	if err := u.setGlobalGit("user.name", profile.Name); err != nil {
+		fmt.Printf("Error setting git user.name: %v\n", err)
+		return
+	}
+	if err := u.setGlobalGit("user.email", profile.Email); err != nil {
+		fmt.Printf("Error setting git user.email: %v\n", err)
+		return
+	}
+
+	// Action 2: Set this profile as the active one in gitego's config.
+	cfg.ActiveProfile = profileName
+	if err := u.save(cfg); err != nil {
+		fmt.Printf("Error saving active profile setting: %v\n", err)
+		return
+	}
+
+	// Action 3: If on macOS, also preemptively set the credential
+	// in the keychain to prevent the osxkeychain helper from prompting.
+	if u.getOS() == "darwin" {
+		token, err := u.getToken(profileName)
+		if err == nil && token != "" && profile.Username != "" {
+			_ = u.setGitCredential(profile.Username, token)
+		}
+	}
+
+	fmt.Printf("✓ Set active profile to '%s'.\n", profileName)
+}
 
 var useCmd = &cobra.Command{
 	Use:   "use <profile_name>",
@@ -20,71 +73,16 @@ This command updates your global .gitconfig, sets the active profile for the
 credential helper, and preemptively updates the macOS Keychain.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		profileName := args[0]
-		cfg, err := config.Load()
-		if err != nil {
-			fmt.Printf("Error loading config: %v\n", err)
-			return
+		runner := &useRunner{
+			load:             config.Load,
+			save:             func(c *config.Config) error { return c.Save() },
+			setGlobalGit:     utils.SetGlobalGitConfig,
+			setGitCredential: config.SetGitCredential,
+			getOS:            func() string { return runtime.GOOS },
+			getToken:         config.GetToken,
 		}
-
-		profile, exists := cfg.Profiles[profileName]
-		if !exists {
-			fmt.Printf("Error: Profile '%s' not found.\n", profileName)
-			return
-		}
-
-		// Action 1: Set the global git config for user name and email.
-		if err := utils.SetGlobalGitConfig("user.name", profile.Name); err != nil {
-			fmt.Printf("Error setting git user.name: %v\n", err)
-			return
-		}
-		if err := utils.SetGlobalGitConfig("user.email", profile.Email); err != nil {
-			fmt.Printf("Error setting git user.email: %v\n", err)
-			return
-		}
-
-		// Action 2: Set this profile as the active one in gitego's config.
-		cfg.ActiveProfile = profileName
-		if err := cfg.Save(); err != nil {
-			fmt.Printf("Error saving active profile setting: %v\n", err)
-			return
-		}
-
-		// Action 3: If on macOS, also preemptively set the credential
-		// in the keychain to prevent the osxkeychain helper from prompting.
-		if runtime.GOOS == "darwin" {
-
-			token, err := config.GetToken(profileName)
-			// Only proceed if the profile has a token.
-			if err != nil {
-				// We still print the final success message because the main goal was achieved.
-				fmt.Printf("✓ Set active profile to '%s'.\n", profileName)
-				return
-			}
-
-			if profile.Username == "" {
-				// We still print the final success message.
-				fmt.Printf("✓ Set active profile to '%s'.\n", profileName)
-				return
-			}
-
-			if err := config.SetGitCredential(profile.Username, token); err != nil {
-				fmt.Printf("Warning: Failed to pre-set keychain credential: %v\n", err)
-			} else {
-			}
-		}
-
-		fmt.Printf("✓ Set active profile to '%s'.\n", profileName)
+		runner.run(cmd, args)
 	},
-}
-
-func setGitConfig(key string, value string) error {
-	cmd := exec.Command("git", "config", "--global", key, value)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("git command failed: %w\n%s", err, string(output))
-	}
-	return nil
 }
 
 func init() {

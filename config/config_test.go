@@ -5,6 +5,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -146,5 +147,73 @@ func TestLoad_MalformedYAML(t *testing.T) {
 	_, err = Load()
 	if err == nil {
 		t.Error("Expected an error when loading malformed YAML, but got nil.")
+	}
+}
+
+// TestRemoveIncludeIf_MultipleRulesWithSpaces verifies that the correct rule is removed
+// from a .gitconfig file that has multiple gitego rules separated by blank lines.
+func TestRemoveIncludeIf_MultipleRulesWithSpaces(t *testing.T) {
+	// 1. Setup
+	tempDir, err := os.MkdirTemp("", "gitego-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Override global paths to use our temp directory.
+	originalGitConfigPath := gitConfigPath
+	originalProfilesDir := profilesDir
+	gitConfigPath = filepath.Join(tempDir, ".gitconfig")
+	profilesDir = filepath.Join(tempDir, ".gitego", "profiles")
+	defer func() {
+		gitConfigPath = originalGitConfigPath
+		profilesDir = originalProfilesDir
+	}()
+
+	// Create a mock .gitconfig with two rules and spacing, similar to the user's file.
+	// IMPORTANT: Use forward slashes as this is what gitego writes.
+	initialGitconfigContent := `[user]
+	email = test@example.com
+	name = Test User
+
+# gitego auto-switch rule
+[includeIf "gitdir:C:/test/personal/"]
+    path = ` + filepath.ToSlash(filepath.Join(profilesDir, "personal.gitconfig")) + `
+
+# gitego auto-switch rule
+[includeIf "gitdir:C:/test/work/"]
+    path = ` + filepath.ToSlash(filepath.Join(profilesDir, "work.gitconfig")) + `
+`
+	if err := os.WriteFile(gitConfigPath, []byte(initialGitconfigContent), 0644); err != nil {
+		t.Fatalf("Failed to write initial .gitconfig: %v", err)
+	}
+
+	// 2. Execute the function to remove the "work" profile's rule.
+	err = RemoveIncludeIf("work")
+	if err != nil {
+		t.Fatalf("RemoveIncludeIf returned an unexpected error: %v", err)
+	}
+
+	// 3. Assert the result
+	finalContent, err := os.ReadFile(gitConfigPath)
+	if err != nil {
+		t.Fatalf("Failed to read final .gitconfig: %v", err)
+	}
+
+	finalContentStr := string(finalContent)
+
+	// The "work" profile's path should be gone.
+	if strings.Contains(finalContentStr, "work.gitconfig") {
+		t.Errorf("Expected 'work.gitconfig' rule to be removed, but it still exists.\nContent:\n%s", finalContentStr)
+	}
+
+	// The "personal" profile's path should still be present.
+	if !strings.Contains(finalContentStr, "personal.gitconfig") {
+		t.Errorf("Expected 'personal.gitconfig' rule to remain, but it was removed.\nContent:\n%s", finalContentStr)
+	}
+
+	// The user section should be untouched.
+	if !strings.Contains(finalContentStr, "[user]") {
+		t.Error("The [user] section was unexpectedly removed.")
 	}
 }

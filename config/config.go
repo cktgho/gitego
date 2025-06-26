@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -111,20 +112,48 @@ func (c *Config) GetActiveProfileForCurrentDir() (profileName, source string) {
 		if err != nil {
 			return
 		}
-		currentAbsDir, err := filepath.Abs(currentDir)
+
+		// Resolve symlinks before comparing paths
+		evalDir, err := filepath.EvalSymlinks(currentDir)
+		if err != nil {
+			evalDir = currentDir // Fallback to the original path if symlink eval fails
+		}
+
+		currentAbsDir, err := filepath.Abs(evalDir)
 		if err != nil {
 			return
 		}
+		currentAbsDir = filepath.ToSlash(currentAbsDir)
 
 		bestMatchPath := ""
 		for _, rule := range c.AutoRules {
-			rulePath, err := filepath.Abs(strings.TrimSuffix(rule.Path, "/"))
+			// Resolve symlinks for the rule path as well.
+			ruleEvalPath, err := filepath.EvalSymlinks(rule.Path)
+			if err != nil {
+				ruleEvalPath = rule.Path // Fallback
+			}
+
+			ruleAbsPath, err := filepath.Abs(ruleEvalPath)
 			if err != nil {
 				continue
 			}
-			if strings.HasPrefix(currentAbsDir, rulePath) {
-				if len(rulePath) > len(bestMatchPath) {
-					bestMatchPath = rulePath
+			ruleAbsPath = filepath.ToSlash(ruleAbsPath)
+
+			if !strings.HasSuffix(ruleAbsPath, "/") {
+				ruleAbsPath += "/"
+			}
+
+			// Use case-insensitive comparison on Windows
+			compareDir := currentAbsDir
+			compareRulePath := ruleAbsPath
+			if runtime.GOOS == "windows" {
+				compareDir = strings.ToLower(compareDir)
+				compareRulePath = strings.ToLower(compareRulePath)
+			}
+
+			if strings.HasPrefix(compareDir, compareRulePath) {
+				if len(ruleAbsPath) > len(bestMatchPath) {
+					bestMatchPath = ruleAbsPath
 					profileName = rule.Profile
 					source = fmt.Sprintf("gitego auto-rule for profile '%s'", rule.Profile)
 				}
@@ -203,59 +232,54 @@ func RemoveIncludeIf(profileName string) error {
 
 	lines := strings.Split(string(input), "\n")
 	var newLines []string
-	var blockToRemoveIndex = -1
+	var removing bool = false
 
-	// Find the start of the block to remove
-	for i, line := range lines {
-		// A .gitconfig path line is always indented.
-		if !strings.HasPrefix(strings.TrimSpace(line), "path") {
-			continue
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		trimmedLine := strings.TrimSpace(line)
+
+		// This is the start of a block to potentially remove
+		if strings.HasPrefix(trimmedLine, "[includeIf") {
+			// Look ahead to find the associated path line
+			for j := i + 1; j < len(lines); j++ {
+				nextLineTrimmed := strings.TrimSpace(lines[j])
+				if strings.HasPrefix(nextLineTrimmed, "[") {
+					// We've hit a new section before finding a path, so this isn't our block
+					break
+				}
+				if strings.HasPrefix(nextLineTrimmed, "path") {
+					// We found the path line. Check if it matches our target.
+					if strings.Contains(filepath.ToSlash(nextLineTrimmed), profileConfigPath) {
+						removing = true
+						// Skip the comment line if it's there
+						if i > 0 && strings.TrimSpace(lines[i-1]) == "# gitego auto-switch rule" {
+							if len(newLines) > 0 {
+								newLines = newLines[:len(newLines)-1]
+							}
+						}
+					}
+					break // Stop looking ahead
+				}
+			}
 		}
-		// Check if the path line matches our target profile config path
-		if strings.Contains(filepath.ToSlash(line), profileConfigPath) {
-			blockToRemoveIndex = i
-			break
+
+		if !removing {
+			newLines = append(newLines, line)
 		}
-	}
 
-	// If no matching block was found, we're done.
-	if blockToRemoveIndex == -1 {
-		return nil
-	}
-
-	// Find the start of this block by looking backwards for the [includeIf] header
-	blockStartIndex := -1
-	for i := blockToRemoveIndex - 1; i >= 0; i-- {
-		if strings.HasPrefix(strings.TrimSpace(lines[i]), "[includeIf") {
-			blockStartIndex = i
-			break
-		}
-	}
-
-	// If we couldn't find a proper header, something is wrong with the file, so don't touch it.
-	if blockStartIndex == -1 {
-		return fmt.Errorf("found path for profile '%s' but no matching [includeIf] header", profileName)
-	}
-
-	// Also check for our preceding comment to remove it too.
-	if blockStartIndex > 0 && strings.TrimSpace(lines[blockStartIndex-1]) == "# gitego auto-switch rule" {
-		blockStartIndex--
-	}
-
-	// Find the end of the block (next section or end of file)
-	blockEndIndex := len(lines)
-	for i := blockToRemoveIndex + 1; i < len(lines); i++ {
-		if strings.HasPrefix(strings.TrimSpace(lines[i]), "[") {
-			blockEndIndex = i
-			break
+		// A new section header means we are definitely done with the previous block
+		if removing && strings.HasPrefix(trimmedLine, "[") && !strings.HasPrefix(trimmedLine, "[includeIf") {
+			removing = false
 		}
 	}
 
-	// Rebuild the file content, excluding the block to be removed.
-	newLines = append(newLines, lines[:blockStartIndex]...)
-	newLines = append(newLines, lines[blockEndIndex:]...)
+	output := strings.Join(newLines, "\n")
+	// Clean up any excess blank lines that might result from the deletion
+	for strings.Contains(output, "\n\n\n") {
+		output = strings.ReplaceAll(output, "\n\n\n", "\n\n")
+	}
 
-	output := strings.TrimSpace(strings.Join(newLines, "\n"))
+	output = strings.TrimSpace(output)
 	if output != "" {
 		output += "\n"
 	}

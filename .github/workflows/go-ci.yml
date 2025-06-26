@@ -1,0 +1,37 @@
+# .github/workflows/go-ci.yml
+
+name: Go Continuous Integration
+
+# This workflow runs on pushes to the main branch and on any pull request.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # The 'build-and-test' job will run our tests.
+  build-and-test:
+    # Use a matrix strategy to run this job on all three major operating systems.
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    # Set the runner based on the current OS in the matrix.
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    # Step 1: Set up the Go environment on the runner.
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21' # Specify the Go version you are using.
+
+    # Step 2: Check out your repository's code so the workflow can access it.
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    # Step 3: Run all the tests in the project.
+    # The `./...` pattern tells Go to run tests in the current directory and all subdirectories.
+    - name: Run Tests
+      run: go test -v ./...
