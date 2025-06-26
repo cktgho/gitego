@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 
@@ -12,14 +13,11 @@ import (
 )
 
 // runCheckCommitTest is a helper to execute the check-commit command with mocks.
-// It now uses a channel for robust synchronization.
 func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput string) (exitCode int, stderr string) {
 	t.Helper()
 
-	exitCode = -1 // Default to a value that indicates it was not called.
 	exitSignal := make(chan int, 1)
 
-	// Mock the exit function to send the exit code to our channel.
 	mockExit := func(code int) {
 		exitSignal <- code
 	}
@@ -35,29 +33,39 @@ func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput st
 		},
 		loadConfig: func() (*config.Config, error) { return cfg, nil },
 		stdin:      strings.NewReader(userInput),
-		stderr:     &stderrBuf, // Capture stderr.
+		stderr:     &stderrBuf,
 		exit:       mockExit,
 	}
 
-	// Execute the command's logic.
 	runner.run(&cobra.Command{}, []string{})
 
 	// Block until the mock exit function has been called.
-	// This makes the test synchronous and reliable.
 	exitCode = <-exitSignal
 
 	return exitCode, stderrBuf.String()
 }
 
 func TestCheckCommitCommand(t *testing.T) {
-	// Setup a base mock config.
+	// --- Definitive Fix: Create a realistic temporary directory structure for the test ---
+	tempDir, err := os.MkdirTemp("", "gitego-check-commit-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	originalWd, _ := os.Getwd()
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to change directory: %v", err)
+	}
+	defer os.Chdir(originalWd)
+
+	// Setup a mock config using an absolute path for the rule.
 	mockCfg := &config.Config{
 		Profiles: map[string]*config.Profile{
 			"work": {Email: "work@example.com"},
 		},
 		AutoRules: []*config.AutoRule{
-			// The path needs to match the current dir for the test to activate the rule.
-			{Path: ".", Profile: "work"},
+			{Path: tempDir, Profile: "work"},
 		},
 	}
 
