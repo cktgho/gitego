@@ -107,60 +107,64 @@ func (c *Config) GetActiveProfileForCurrentDir() (profileName, source string) {
 		source = "No active gitego profile"
 	}
 
-	if len(c.AutoRules) > 0 {
-		currentDir, err := os.Getwd()
+	if len(c.AutoRules) == 0 {
+		return profileName, source
+	}
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return profileName, source
+	}
+
+	evalDir, err := filepath.EvalSymlinks(currentDir)
+	if err != nil {
+		evalDir = currentDir
+	}
+
+	currentAbsDir, err := filepath.Abs(evalDir)
+	if err != nil {
+		return profileName, source
+	}
+	currentAbsDir = filepath.ToSlash(currentAbsDir)
+
+	// Ensure both paths have a trailing slash for comparison
+	if !strings.HasSuffix(currentAbsDir, "/") {
+		currentAbsDir += "/"
+	}
+
+	bestMatchPath := ""
+	for _, rule := range c.AutoRules {
+		ruleEvalPath, err := filepath.EvalSymlinks(rule.Path)
 		if err != nil {
-			return
+			ruleEvalPath = rule.Path
+		}
+		ruleAbsPath, err := filepath.Abs(ruleEvalPath)
+		if err != nil {
+			continue
+		}
+		ruleAbsPath = filepath.ToSlash(ruleAbsPath)
+
+		if !strings.HasSuffix(ruleAbsPath, "/") {
+			ruleAbsPath += "/"
 		}
 
-		// Resolve symlinks before comparing paths
-		evalDir, err := filepath.EvalSymlinks(currentDir)
-		if err != nil {
-			evalDir = currentDir // Fallback to the original path if symlink eval fails
+		compareDir := currentAbsDir
+		compareRulePath := ruleAbsPath
+		if runtime.GOOS == "windows" {
+			compareDir = strings.ToLower(compareDir)
+			compareRulePath = strings.ToLower(compareRulePath)
 		}
 
-		currentAbsDir, err := filepath.Abs(evalDir)
-		if err != nil {
-			return
-		}
-		currentAbsDir = filepath.ToSlash(currentAbsDir)
-
-		bestMatchPath := ""
-		for _, rule := range c.AutoRules {
-			// Resolve symlinks for the rule path as well.
-			ruleEvalPath, err := filepath.EvalSymlinks(rule.Path)
-			if err != nil {
-				ruleEvalPath = rule.Path // Fallback
-			}
-
-			ruleAbsPath, err := filepath.Abs(ruleEvalPath)
-			if err != nil {
-				continue
-			}
-			ruleAbsPath = filepath.ToSlash(ruleAbsPath)
-
-			if !strings.HasSuffix(ruleAbsPath, "/") {
-				ruleAbsPath += "/"
-			}
-
-			// Use case-insensitive comparison on Windows
-			compareDir := currentAbsDir
-			compareRulePath := ruleAbsPath
-			if runtime.GOOS == "windows" {
-				compareDir = strings.ToLower(compareDir)
-				compareRulePath = strings.ToLower(compareRulePath)
-			}
-
-			if strings.HasPrefix(compareDir, compareRulePath) {
-				if len(ruleAbsPath) > len(bestMatchPath) {
-					bestMatchPath = ruleAbsPath
-					profileName = rule.Profile
-					source = fmt.Sprintf("gitego auto-rule for profile '%s'", rule.Profile)
-				}
+		if strings.HasPrefix(compareDir, compareRulePath) {
+			if len(ruleAbsPath) > len(bestMatchPath) {
+				bestMatchPath = ruleAbsPath
+				profileName = rule.Profile
+				source = fmt.Sprintf("gitego auto-rule for profile '%s'", rule.Profile)
 			}
 		}
 	}
-	return
+
+	return profileName, source
 }
 
 func EnsureProfileGitconfig(profileName string, profile *Profile) error {
