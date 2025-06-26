@@ -12,12 +12,14 @@ import (
 )
 
 // runCheckCommitTest is a helper to execute the check-commit command with mocks.
+// It now uses a channel for robust synchronization.
 func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput string) (exitCode int, stderr string) {
 	t.Helper()
 
-	// Use a channel to reliably signal that the mock exit function was called.
+	exitCode = -1 // Default to a value that indicates it was not called.
 	exitSignal := make(chan int, 1)
 
+	// Mock the exit function to send the exit code to our channel.
 	mockExit := func(code int) {
 		exitSignal <- code
 	}
@@ -33,7 +35,7 @@ func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput st
 		},
 		loadConfig: func() (*config.Config, error) { return cfg, nil },
 		stdin:      strings.NewReader(userInput),
-		stderr:     &stderrBuf,
+		stderr:     &stderrBuf, // Capture stderr.
 		exit:       mockExit,
 	}
 
@@ -54,6 +56,7 @@ func TestCheckCommitCommand(t *testing.T) {
 			"work": {Email: "work@example.com"},
 		},
 		AutoRules: []*config.AutoRule{
+			// The path needs to match the current dir for the test to activate the rule.
 			{Path: ".", Profile: "work"},
 		},
 	}
