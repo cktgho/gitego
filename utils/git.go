@@ -8,14 +8,16 @@ import (
 	"strings"
 )
 
+// execCommand is a package-level variable that can be overridden in tests.
+var execCommand = exec.Command
+
 // GetEffectiveGitConfig runs 'git config <key>' without the --global flag.
 // This correctly resolves the config value from local > global > system.
 func GetEffectiveGitConfig(key string) (string, error) {
-	cmd := exec.Command("git", "config", key)
+	// Use the package-level variable instead of exec.Command directly.
+	cmd := execCommand("git", "config", key)
 	output, err := cmd.Output()
 	if err != nil {
-		// It's not necessarily an error if the config isn't set,
-		// so we return the error but allow the caller to decide how to handle it.
 		return "", err
 	}
 	return strings.TrimSpace(string(output)), nil
@@ -24,8 +26,8 @@ func GetEffectiveGitConfig(key string) (string, error) {
 // SetGlobalGitConfig runs 'git config --global <key> <value>'.
 // It sets a configuration value in the user's global .gitconfig file.
 func SetGlobalGitConfig(key, value string) error {
-	cmd := exec.Command("git", "config", "--global", key, value)
-	// We use CombinedOutput to capture any error messages from Git.
+	// Use the package-level variable here as well.
+	cmd := execCommand("git", "config", "--global", key, value)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git command failed: %w\nOutput: %s", err, string(output))
