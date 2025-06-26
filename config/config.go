@@ -203,34 +203,39 @@ func RemoveIncludeIf(profileName string) error {
 
 	lines := strings.Split(string(input), "\n")
 	var newLines []string
-	var skipping bool = false
+	var inBlockToRemove bool
 
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
 		trimmedLine := strings.TrimSpace(line)
 
-		// If we find a new section header, we are definitely no longer skipping.
+		// A new section header means we are definitely done with any previous block.
 		if strings.HasPrefix(trimmedLine, "[") {
-			skipping = false
+			inBlockToRemove = false
 		}
 
-		// If this line is an includeIf for the profile we want to remove...
-		if strings.HasPrefix(trimmedLine, "[includeIf") && strings.Contains(filepath.ToSlash(trimmedLine), profileConfigPath) {
-			skipping = true
-			// Check if the preceding line is our comment block and skip it too.
-			if i > 0 && strings.TrimSpace(lines[i-1]) == "# gitego auto-switch rule" {
-				if len(newLines) > 0 {
-					newLines = newLines[:len(newLines)-1]
+		// This is the logic that was flawed. Now we check the *next* line.
+		if strings.HasPrefix(trimmedLine, "[includeIf") {
+			if i+1 < len(lines) {
+				nextLine := lines[i+1]
+				// Normalize path on next line to check against our target path
+				if strings.Contains(filepath.ToSlash(nextLine), profileConfigPath) {
+					inBlockToRemove = true
+					// Check if the preceding line is our comment block and skip it too.
+					if i > 0 && strings.TrimSpace(lines[i-1]) == "# gitego auto-switch rule" {
+						if len(newLines) > 0 {
+							newLines = newLines[:len(newLines)-1]
+						}
+					}
 				}
 			}
 		}
 
-		if !skipping {
+		if !inBlockToRemove {
 			newLines = append(newLines, line)
 		}
 	}
 
-	// Join the lines back together and clean up excess newlines
 	output := strings.Join(newLines, "\n")
 	output = strings.TrimSpace(output)
 	if output != "" {
