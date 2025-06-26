@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
 
@@ -18,10 +17,14 @@ func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput st
 
 	exitCode = -1 // Default to a value that indicates it was not called.
 
-	// Mock the exit function to capture the code instead of terminating the test.
+	// Mock the exit function. Instead of calling os.Exit, we panic.
+	// This immediately stops the execution flow, just like os.Exit would.
 	mockExit := func(code int) {
 		exitCode = code
+		panic("os.Exit called")
 	}
+
+	var stderrBuf bytes.Buffer
 
 	runner := &checkCommitRunner{
 		getGitConfig: func(key string) (string, error) {
@@ -32,34 +35,23 @@ func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput st
 		},
 		loadConfig: func() (*config.Config, error) { return cfg, nil },
 		stdin:      strings.NewReader(userInput),
-		stderr:     io.Discard, // Initially discard stderr for non-prompting tests
+		stderr:     &stderrBuf, // Always capture stderr
 		exit:       mockExit,
 	}
 
-	// Capture stderr if we expect a prompt
-	var stderrBuf bytes.Buffer
-	//if userInput != "" {
-	//	runner.stderr = &stderrBuf
-	//}
-	runner.stderr = &stderrBuf
-
-	// We need a dummy cobra command to pass to the run function
-	dummyCmd := &cobra.Command{}
-
-	// Execute the command logic
-	// We use a goroutine because the command calls exit(), which stops the goroutine,
-	// but allows the test function to continue and check the captured exit code.
-	done := make(chan bool)
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// This can happen if the exit function panics, which is fine for tests.
+	// We use defer to recover from the panic we triggered in our mock exit function.
+	// This allows the test to continue and check the results.
+	defer func() {
+		if r := recover(); r != nil {
+			if r != "os.Exit called" {
+				// If it's a different panic, we should re-throw it.
+				panic(r)
 			}
-			done <- true
-		}()
-		runner.run(dummyCmd, []string{})
+		}
 	}()
-	<-done
+
+	// Execute the command's logic synchronously.
+	runner.run(&cobra.Command{}, []string{})
 
 	return exitCode, stderrBuf.String()
 }
@@ -90,7 +82,7 @@ func TestCheckCommitCommand(t *testing.T) {
 		if exitCode != 1 {
 			t.Errorf("Expected exit code 1 when user aborts, but got %d", exitCode)
 		}
-		if !strings.Contains(stderr, "Commit aborted by user.") {
+		if !strings.Contains(stderr, "Commit aborted by user") {
 			t.Errorf("Expected 'aborted' message in stderr, but it was missing. Got:\n%s", stderr)
 		}
 	})
@@ -102,7 +94,7 @@ func TestCheckCommitCommand(t *testing.T) {
 		if exitCode != 0 {
 			t.Errorf("Expected exit code 0 when user proceeds, but got %d", exitCode)
 		}
-		if !strings.Contains(stderr, "Commit proceeding with mismatched user.") {
+		if !strings.Contains(stderr, "Commit proceeding with mismatched user") {
 			t.Errorf("Expected 'proceeding' message in stderr, but it was missing. Got:\n%s", stderr)
 		}
 	})
