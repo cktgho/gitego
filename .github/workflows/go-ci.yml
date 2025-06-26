@@ -16,7 +16,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        #os: [macos-latest]
 
     # Set the runner based on the current OS in the matrix.
     runs-on: ${{ matrix.os }}
