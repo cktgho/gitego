@@ -212,15 +212,23 @@ func EnsureProfileGitconfig(profileName string, profile *Profile) error {
 // AddIncludeIf modifies the user's global ~/.gitconfig to include our new profile config.
 // It adds an [includeIf "gitdir:path/to/work/"] directive.
 func AddIncludeIf(profileName string, dirPath string) error {
-	// Ensure both paths use forward slashes for cross-platform compatibility ---
+	// --- Ensure BOTH paths use forward slashes for Git's parser ---
+
+	// 1. Path to the profile-specific .gitconfig file (e.g., ~/.gitego/profiles/work.gitconfig)
 	profileConfigPath := filepath.ToSlash(filepath.Join(profilesDir, fmt.Sprintf("%s.gitconfig", profileName)))
 
-	// The display path for user feedback remains the same.
-	displayPath := filepath.Join("~/.gitego/profiles", fmt.Sprintf("%s.gitconfig", profileName))
+	// 2. The conditional directory path.
+	cleanDirPath := filepath.ToSlash(dirPath)
+	if !strings.HasSuffix(cleanDirPath, "/") {
+		cleanDirPath += "/"
+	}
 
 	// This is the line we want to add to the global .gitconfig
-	includeLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", dirPath, profileConfigPath)
-	displayLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", dirPath, displayPath)
+	includeLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", cleanDirPath, profileConfigPath)
+
+	// The display path for user feedback remains user-friendly.
+	displayPath := filepath.Join("~/.gitego/profiles", fmt.Sprintf("%s.gitconfig", profileName))
+	displayLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", cleanDirPath, displayPath)
 
 	// Read the global .gitconfig file to check if the line already exists.
 	file, err := os.Open(gitConfigPath)
@@ -231,7 +239,6 @@ func AddIncludeIf(profileName string, dirPath string) error {
 		defer file.Close()
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			// If our include directive is already present, we don't need to do anything.
 			if strings.Contains(scanner.Text(), profileConfigPath) {
 				fmt.Printf("✓ Auto-switch rule for profile '%s' already exists.\n", profileName)
 				return nil
@@ -246,7 +253,6 @@ func AddIncludeIf(profileName string, dirPath string) error {
 	}
 	defer f.Close()
 
-	// We add newlines before our entry to ensure it's separated from previous content.
 	if _, err := f.WriteString("\n# gitego auto-switch rule\n" + includeLine + "\n"); err != nil {
 		return fmt.Errorf("could not write to .gitconfig: %w", err)
 	}
