@@ -38,9 +38,10 @@ func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput st
 
 	// Capture stderr if we expect a prompt
 	var stderrBuf bytes.Buffer
-	if userInput != "" {
-		runner.stderr = &stderrBuf
-	}
+	//if userInput != "" {
+	//	runner.stderr = &stderrBuf
+	//}
+	runner.stderr = &stderrBuf
 
 	// We need a dummy cobra command to pass to the run function
 	dummyCmd := &cobra.Command{}
