@@ -56,9 +56,13 @@ from your global .gitconfig file.`,
 		}
 
 		// 2. Delete the profile-specific .gitconfig file.
-		home, _ := os.UserHomeDir()
-		profileGitconfigPath := filepath.Join(home, ".gitego", "profiles", fmt.Sprintf("%s.gitconfig", profileName))
-		_ = os.Remove(profileGitconfigPath) // Ignore error if file doesn't exist.
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("Warning: Could not get user home directory to delete profile config: %v\n", err)
+		} else {
+			profileGitconfigPath := filepath.Join(home, ".gitego", "profiles", fmt.Sprintf("%s.gitconfig", profileName))
+			_ = os.Remove(profileGitconfigPath)
+		}
 
 		// 3. Remove any auto-rules from gitego's config that use this profile.
 		var keptRules []*config.AutoRule

@@ -153,11 +153,8 @@ func EnsureProfileGitconfig(profileName string, profile *Profile) error {
 
 func AddIncludeIf(profileName string, dirPath string) error {
 	profileConfigPath := filepath.ToSlash(filepath.Join(profilesDir, fmt.Sprintf("%s.gitconfig", profileName)))
-
 	includeLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", dirPath, profileConfigPath)
 
-	// This avoids platform-specific weirdness with filepath.Join and tilde.
-	//displayConfigPath := filepath.Join("~", ".gitego", "profiles", fmt.Sprintf("%s.gitconfig", profileName))
 	displayConfigPath := fmt.Sprintf("~/.gitego/profiles/%s.gitconfig", profileName)
 	displayLine := fmt.Sprintf("[includeIf \"gitdir:%s\"]\n    path = %s", dirPath, displayConfigPath)
 
@@ -206,35 +203,39 @@ func RemoveIncludeIf(profileName string) error {
 
 	lines := strings.Split(string(input), "\n")
 	var newLines []string
-	var inBlockToRemove bool
+	var skipping bool = false
 
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
 		trimmedLine := strings.TrimSpace(line)
 
-		// Check if a line marks the start of an includeIf block for our profile
-		if strings.HasPrefix(trimmedLine, "[includeIf") && strings.Contains(filepath.ToSlash(trimmedLine), profileConfigPath) {
-			inBlockToRemove = true
-			continue // Skip this line
+		// If we find a new section header, we are definitely no longer skipping.
+		if strings.HasPrefix(trimmedLine, "[") {
+			skipping = false
 		}
 
-		if inBlockToRemove {
-			// If we are in the block to remove, we skip indented lines.
-			// The block ends when we hit a non-indented line or the end of the file.
-			if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") {
-				inBlockToRemove = false
-			} else {
-				continue // Skip the indented line inside the block
+		// If this line is an includeIf for the profile we want to remove...
+		if strings.HasPrefix(trimmedLine, "[includeIf") && strings.Contains(filepath.ToSlash(trimmedLine), profileConfigPath) {
+			skipping = true
+			// Check if the preceding line is our comment block and skip it too.
+			if i > 0 && strings.TrimSpace(lines[i-1]) == "# gitego auto-switch rule" {
+				if len(newLines) > 0 {
+					newLines = newLines[:len(newLines)-1]
+				}
 			}
 		}
 
-		newLines = append(newLines, line)
+		if !skipping {
+			newLines = append(newLines, line)
+		}
 	}
 
-	// Join the lines back together, preserving original line endings where possible.
+	// Join the lines back together and clean up excess newlines
 	output := strings.Join(newLines, "\n")
-	// Clean up potential excess newlines at the end of the file.
-	output = strings.TrimRight(output, "\n") + "\n"
+	output = strings.TrimSpace(output)
+	if output != "" {
+		output += "\n"
+	}
 
 	return os.WriteFile(gitConfigPath, []byte(output), 0644)
 }
