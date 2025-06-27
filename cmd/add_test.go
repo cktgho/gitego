@@ -13,6 +13,7 @@ func TestAddCommand(t *testing.T) {
 	mockCfg := &config.Config{
 		Profiles: make(map[string]*config.Profile),
 	}
+
 	var capturedTokenProfile, capturedToken string
 
 	// 2. Create an instance of our command runner with mock functions
@@ -22,11 +23,13 @@ func TestAddCommand(t *testing.T) {
 		},
 		save: func(c *config.Config) error {
 			mockCfg = c // "Save" to our in-memory object
+
 			return nil
 		},
 		setToken: func(profileName, token string) error {
 			capturedTokenProfile = profileName
 			capturedToken = token
+
 			return nil
 		},
 	}

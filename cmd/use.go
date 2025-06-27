@@ -24,6 +24,7 @@ type useRunner struct {
 func (u *useRunner) run(cmd *cobra.Command, args []string) {
 	profileName := args[0]
 	cfg, err := u.load()
+
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
 		return
@@ -40,6 +41,7 @@ func (u *useRunner) run(cmd *cobra.Command, args []string) {
 		fmt.Printf("Error setting git user.name: %v\n", err)
 		return
 	}
+
 	if err := u.setGlobalGit("user.email", profile.Email); err != nil {
 		fmt.Printf("Error setting git user.email: %v\n", err)
 		return

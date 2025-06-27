@@ -72,7 +72,7 @@ func (e *editor) run(cmd *cobra.Command, args []string) {
 	fmt.Printf("✓ Profile '%s' updated successfully.\n", profileName)
 }
 
-// editCmd represents the edit command
+// editCmd represents the edit command.
 var editCmd = &cobra.Command{
 	Use:   "edit <profile_name>",
 	Short: "Edits an existing user profile.",

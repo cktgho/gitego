@@ -27,20 +27,24 @@ func TestAutoCommand(t *testing.T) {
 	runner := &autoRunner{
 		load: func() (*config.Config, error) {
 			cfgCopy := *mockCfg
+
 			return &cfgCopy, nil
 		},
 		save: func(c *config.Config) error {
 			savedConfig = true
 			mockCfg = c
+
 			return nil
 		},
 		ensureProfileGitconfig: func(profileName string, p *config.Profile) error {
 			ensuredProfile = profileName
+
 			return nil
 		},
 		addIncludeIf: func(profileName, path string) error {
 			includedProfile = profileName
 			includedPath = path
+
 			return nil
 		},
 	}

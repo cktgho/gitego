@@ -18,6 +18,10 @@ const hookScriptContent = `
 # If there's a mismatch, it will prompt you before committing.
 gitego internal check-commit
 `
+const (
+	// executableFilePermissions are the permissions for an executable file.
+	executableFilePermissions = 0755
+)
 
 var installHookCmd = &cobra.Command{
 	Use:   "install-hook",
@@ -37,7 +41,7 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 
 		hooksDir := filepath.Join(gitRoot, ".git", "hooks")
 		// It's possible the hooks directory doesn't exist in a fresh git init.
-		if err := os.MkdirAll(hooksDir, 0755); err != nil {
+		if err := os.MkdirAll(hooksDir, executableFilePermissions); err != nil {
 			fmt.Printf("Error: Could not create hooks directory: %v\n", err)
 			return
 		}
@@ -70,7 +74,7 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 			}
 
 			// User confirmed. Append to the existing file.
-			f, err := os.OpenFile(hookPath, os.O_APPEND|os.O_WRONLY, 0755)
+			f, err := os.OpenFile(hookPath, os.O_APPEND|os.O_WRONLY, executableFilePermissions)
 			if err != nil {
 				fmt.Printf("Error: Failed to open existing hook for appending: %v\n", err)
 				return
@@ -87,7 +91,7 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 			// File does not exist, create a new one.
 			// Prepend the shebang for a new script.
 			newHookContent := "#!/bin/sh" + hookScriptContent
-			err = os.WriteFile(hookPath, []byte(newHookContent), 0755) // 0755 makes it executable
+			err = os.WriteFile(hookPath, []byte(newHookContent), executableFilePermissions)
 			if err != nil {
 				fmt.Printf("Error installing hook: %v\n", err)
 				return

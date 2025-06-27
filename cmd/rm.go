@@ -42,7 +42,8 @@ func (r *rmRunner) run(cmd *cobra.Command, args []string) {
 	}
 
 	if !forceFlag {
-		fmt.Printf("Are you sure you want to remove the profile '%s' and all its rules? This cannot be undone. [y/N]: ", profileName)
+		fmt.Printf("Are you sure you want to remove the profile '%s' and all its rules?\n", profileName)
+		fmt.Print("This cannot be undone. [y/N]: ")
 		reader := bufio.NewReader(os.Stdin)
 		response, _ := reader.ReadString('\n')
 		if strings.TrimSpace(strings.ToLower(response)) != "y" {
@@ -84,11 +85,13 @@ func (r *rmRunner) run(cmd *cobra.Command, args []string) {
 	fmt.Printf("✓ Profile '%s' and all associated rules removed successfully.\n", profileName)
 }
 
-// rmCmd represents the rm command
+// rmCmd represents the rm command.
 var rmCmd = &cobra.Command{
-	Use:     "rm <profile_name>",
-	Short:   "Removes a saved user profile and all associated rules.",
-	Long:    `Removes a profile, its associated credentials, any auto-switch rules that use it from the gitego config, and cleans up corresponding rules from your global .gitconfig file.`,
+	Use:   "rm <profile_name>",
+	Short: "Removes a saved user profile and all associated rules.",
+	Long: `Removes a profile, its associated credentials, any auto-switch 
+	rules that use it from the gitego config, and cleans up corresponding 
+	rules from your global .gitconfig file.`,
 	Aliases: []string{"remove"},
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

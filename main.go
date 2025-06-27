@@ -3,12 +3,15 @@
 package main
 
 import (
-	"github.com/bgreenwell/gitego/cmd" // IMPORTANT: Replace with your module path!
+	"fmt"
+	"os"
+
+	"github.com/bgreenwell/gitego/cmd"
 )
 
 func main() {
-	// All the application logic now lives in the cmd package.
-	// This keeps main.go clean and simple.
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your command: %s", err)
+		os.Exit(1)
+	}
 }
-

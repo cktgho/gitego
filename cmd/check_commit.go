@@ -57,7 +57,8 @@ func (r *checkCommitRunner) run(cmd *cobra.Command, args []string) {
 	// --- Mismatch found, prompt the user ---
 	_, _ = fmt.Fprintf(r.stderr, "\n--- gitego Safety Check ---\n")
 	_, _ = fmt.Fprintf(r.stderr, "Warning: Your effective Git email for this repo is '%s'.\n", gitEmail)
-	_, _ = fmt.Fprintf(r.stderr, "However, the profile expected for this directory is '%s' ('%s').\n", expectedProfileName, expectedProfile.Email)
+	_, _ = fmt.Fprintf(r.stderr, "However, the profile expected for this directory is '%s' ('%s').\n",
+		expectedProfileName, expectedProfile.Email)
 	_, _ = fmt.Fprintf(r.stderr, "---------------------------\n")
 	_, _ = fmt.Fprintf(r.stderr, "Do you want to abort the commit? [Y/n]: ")
 

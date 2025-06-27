@@ -35,6 +35,13 @@ type Config struct {
 	ActiveProfile string              `yaml:"active_profile,omitempty"`
 }
 
+const (
+	// dirPermissions are the default permissions for directories created by gitego.
+	dirPermissions = 0755
+	// filePermissions are the default permissions for files created by gitego.
+	filePermissions = 0644
+)
+
 var (
 	gitegoConfigPath string
 	gitConfigPath    string
@@ -81,7 +88,9 @@ func validateConfig(cfg *Config) {
 
 	for _, rule := range cfg.AutoRules {
 		if _, exists := cfg.Profiles[rule.Profile]; !exists {
-			fmt.Fprintf(os.Stderr, "Warning: Auto-switch rule for path '%s' points to a non-existent profile '%s'.\n", rule.Path, rule.Profile)
+			fmt.Fprintf(os.Stderr,
+				"Warning: Auto-switch rule for path '%s' points to a non-existent profile '%s'.\n",
+				rule.Path, rule.Profile)
 		}
 	}
 }
@@ -91,12 +100,15 @@ func (c *Config) Save() error {
 	if err != nil {
 		return fmt.Errorf("could not serialize config to yaml: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(gitegoConfigPath), 0755); err != nil {
+
+	if err := os.MkdirAll(filepath.Dir(gitegoConfigPath), dirPermissions); err != nil {
 		return fmt.Errorf("could not create config directory: %w", err)
 	}
-	if err := os.WriteFile(gitegoConfigPath, data, 0644); err != nil {
+
+	if err := os.WriteFile(gitegoConfigPath, data, filePermissions); err != nil {
 		return fmt.Errorf("could not write config file: %w", err)
 	}
+
 	return nil
 }
 
@@ -127,25 +139,15 @@ func (c *Config) GetActiveProfileForCurrentDir() (profileName, source string) {
 	}
 	currentAbsDir = filepath.ToSlash(currentAbsDir)
 
-	// Ensure both paths have a trailing slash for comparison
 	if !strings.HasSuffix(currentAbsDir, "/") {
 		currentAbsDir += "/"
 	}
 
 	bestMatchPath := ""
 	for _, rule := range c.AutoRules {
-		ruleEvalPath, err := filepath.EvalSymlinks(rule.Path)
-		if err != nil {
-			ruleEvalPath = rule.Path
-		}
-		ruleAbsPath, err := filepath.Abs(ruleEvalPath)
+		ruleAbsPath, err := cleanPath(rule.Path)
 		if err != nil {
 			continue
-		}
-		ruleAbsPath = filepath.ToSlash(ruleAbsPath)
-
-		if !strings.HasSuffix(ruleAbsPath, "/") {
-			ruleAbsPath += "/"
 		}
 
 		compareDir := currentAbsDir
@@ -167,8 +169,25 @@ func (c *Config) GetActiveProfileForCurrentDir() (profileName, source string) {
 	return profileName, source
 }
 
+func cleanPath(path string) (string, error) {
+	ruleEvalPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		ruleEvalPath = path
+	}
+	ruleAbsPath, err := filepath.Abs(ruleEvalPath)
+	if err != nil {
+		return "", err
+	}
+	ruleAbsPath = filepath.ToSlash(ruleAbsPath)
+
+	if !strings.HasSuffix(ruleAbsPath, "/") {
+		ruleAbsPath += "/"
+	}
+	return ruleAbsPath, nil
+}
+
 func EnsureProfileGitconfig(profileName string, profile *Profile) error {
-	if err := os.MkdirAll(profilesDir, 0755); err != nil {
+	if err := os.MkdirAll(profilesDir, dirPermissions); err != nil {
 		return fmt.Errorf("could not create profiles directory: %w", err)
 	}
 
@@ -181,7 +200,7 @@ func EnsureProfileGitconfig(profileName string, profile *Profile) error {
 	}
 
 	filePath := filepath.Join(profilesDir, fmt.Sprintf("%s.gitconfig", profileName))
-	return os.WriteFile(filePath, []byte(content), 0644)
+	return os.WriteFile(filePath, []byte(content), filePermissions)
 }
 
 func AddIncludeIf(profileName string, dirPath string) error {
@@ -207,7 +226,7 @@ func AddIncludeIf(profileName string, dirPath string) error {
 		}
 	}
 
-	f, err := os.OpenFile(gitConfigPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(gitConfigPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, filePermissions)
 	if err != nil {
 		return fmt.Errorf("could not open .gitconfig for writing: %w", err)
 	}
@@ -236,33 +255,19 @@ func RemoveIncludeIf(profileName string) error {
 
 	lines := strings.Split(string(input), "\n")
 	var newLines []string
-	var removing bool = false
+	var removing bool
 
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
 		trimmedLine := strings.TrimSpace(line)
 
-		// This is the start of a block to potentially remove
 		if strings.HasPrefix(trimmedLine, "[includeIf") {
-			// Look ahead to find the associated path line
-			for j := i + 1; j < len(lines); j++ {
-				nextLineTrimmed := strings.TrimSpace(lines[j])
-				if strings.HasPrefix(nextLineTrimmed, "[") {
-					// We've hit a new section before finding a path, so this isn't our block
-					break
-				}
-				if strings.HasPrefix(nextLineTrimmed, "path") {
-					// We found the path line. Check if it matches our target.
-					if strings.Contains(filepath.ToSlash(nextLineTrimmed), profileConfigPath) {
-						removing = true
-						// Skip the comment line if it's there
-						if i > 0 && strings.TrimSpace(lines[i-1]) == "# gitego auto-switch rule" {
-							if len(newLines) > 0 {
-								newLines = newLines[:len(newLines)-1]
-							}
-						}
+			if isGitegoRule(lines, i, profileConfigPath) {
+				removing = true
+				if i > 0 && strings.TrimSpace(lines[i-1]) == "# gitego auto-switch rule" {
+					if len(newLines) > 0 {
+						newLines = newLines[:len(newLines)-1]
 					}
-					break // Stop looking ahead
 				}
 			}
 		}
@@ -271,22 +276,29 @@ func RemoveIncludeIf(profileName string) error {
 			newLines = append(newLines, line)
 		}
 
-		// A new section header means we are definitely done with the previous block
 		if removing && strings.HasPrefix(trimmedLine, "[") && !strings.HasPrefix(trimmedLine, "[includeIf") {
 			removing = false
 		}
 	}
 
 	output := strings.Join(newLines, "\n")
-	// Clean up any excess blank lines that might result from the deletion
-	for strings.Contains(output, "\n\n\n") {
-		output = strings.ReplaceAll(output, "\n\n\n", "\n\n")
-	}
-
 	output = strings.TrimSpace(output)
 	if output != "" {
 		output += "\n"
 	}
 
-	return os.WriteFile(gitConfigPath, []byte(output), 0644)
+	return os.WriteFile(gitConfigPath, []byte(output), filePermissions)
+}
+
+func isGitegoRule(lines []string, index int, profileConfigPath string) bool {
+	for j := index + 1; j < len(lines); j++ {
+		nextLineTrimmed := strings.TrimSpace(lines[j])
+		if strings.HasPrefix(nextLineTrimmed, "[") {
+			return false
+		}
+		if strings.HasPrefix(nextLineTrimmed, "path") {
+			return strings.Contains(filepath.ToSlash(nextLineTrimmed), profileConfigPath)
+		}
+	}
+	return false
 }

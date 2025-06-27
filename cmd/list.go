@@ -13,7 +13,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// listCmd represents the list command
+const (
+	// minwidth, tabwidth, padding, padchar, and flags for tabwriter.
+	minwidth = 0
+	tabwidth = 0
+	padding  = 3
+	padchar  = ' '
+	flags    = 0
+)
+
+// listCmd represents the list command.
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all saved user profiles and their attributes.",
@@ -39,7 +48,7 @@ The globally active profile is marked with an asterisk (*).`,
 		}
 		sort.Strings(profileNames)
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+		w := tabwriter.NewWriter(os.Stdout, minwidth, tabwidth, padding, padchar, flags)
 		defer w.Flush()
 
 		// New, more informative header

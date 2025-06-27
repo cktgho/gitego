@@ -32,12 +32,14 @@ func (a *adder) run(cmd *cobra.Command, args []string) {
 	cfg, err := a.load()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
+
 		return
 	}
 
 	if _, exists := cfg.Profiles[profileName]; exists {
 		fmt.Printf("Error: Profile '%s' already exists.\n", profileName)
 		fmt.Printf("Use 'gitego edit %s' to modify it, or 'gitego rm %s' to remove it.\n", profileName, profileName)
+
 		return
 	}
 
@@ -52,12 +54,14 @@ func (a *adder) run(cmd *cobra.Command, args []string) {
 
 	if err := a.save(cfg); err != nil {
 		fmt.Printf("Error saving configuration: %v\n", err)
+
 		return
 	}
 
 	if addPAT != "" {
 		if err := a.setToken(profileName, addPAT); err != nil {
 			fmt.Printf("Warning: Profile saved, but failed to store PAT securely: %v\n", err)
+
 			return
 		}
 	}
@@ -74,6 +78,7 @@ with a specific Git user name and email address.`,
 		if len(args) != 1 {
 			return errors.New("requires exactly one argument: the profile name")
 		}
+
 		return nil
 	},
 	// The Run function is a wrapper around our testable run method.

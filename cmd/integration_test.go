@@ -76,7 +76,8 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	// Assert that .gitconfig was updated
 	gitConfigBytes, _ := os.ReadFile(gitConfigPath)
 	gitConfigContent := string(gitConfigBytes)
-	if !strings.Contains(gitConfigContent, "name = Test User") || !strings.Contains(gitConfigContent, "email = test@work.com") {
+	if !strings.Contains(gitConfigContent, "name = Test User") || !strings.Contains(gitConfigContent,
+		"email = test@work.com") {
 		t.Fatal(".gitconfig was not updated correctly by 'use' command.")
 	}
 

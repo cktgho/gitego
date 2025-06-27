@@ -30,6 +30,7 @@ func TestGetEffectiveGitConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, but got %v", err)
 	}
+
 	if val != "test@example.com" {
 		t.Errorf("expected 'test@example.com', but got '%s'", val)
 	}
@@ -61,6 +62,7 @@ func TestHelperProcess(t *testing.T) {
 			args = args[1:]
 			break
 		}
+
 		args = args[1:]
 	}
 
@@ -74,6 +76,7 @@ func TestHelperProcess(t *testing.T) {
 			fmt.Fprint(os.Stdout, "test@example.com")
 			return
 		}
+
 		if len(args) == 5 && args[2] == "--global" && args[3] == "user.name" {
 			return
 		}

@@ -1,16 +1,16 @@
 // cmd/root.go
 
+// Package cmd provides the root command for the gitego CLI application.
 package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
 
 // The version of the application.
-// In a real-world application, this would be set at build time using ldflags.
+// FIXME: In a real-world application, this would be set at build time using ldflags.
 var version = "0.1.0"
 
 var (
@@ -28,7 +28,7 @@ var rootCmd = &cobra.Command{
 It allows you to define, switch between, and automatically apply different
 user profiles (user.name, user.email), SSH keys, and Personal Access Tokens
 depending on your current working directory or other contexts.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		// If the version flag is passed, print the version and exit.
 		if versionFlag {
 			fmt.Printf("gitego version %s\n", version)
@@ -46,9 +46,6 @@ func init() {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your command: %s", err)
-		os.Exit(1)
-	}
+func Execute() error {
+	return rootCmd.Execute()
 }

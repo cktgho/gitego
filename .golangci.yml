@@ -45,4 +45,4 @@ issues:
   # Don't use the default set of exclusions.
   exclude-use-default: false
   # Set the maximum number of issues of the same type to show.
-  max-same-issues: 50
+  max-same-issues: 500
