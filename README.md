@@ -1,5 +1,7 @@
 # gitego
 
+![](logo.jpg)
+
 **Your Git identity manager and automatic profile switcher.**
 
 `gitego` is a command-line tool designed to completely eliminate the risk of committing to a repository with the wrong user identity. It allows you to define separate profiles for work, personal projects, and clients, and then automatically switch between them based on your working directory.
