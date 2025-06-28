@@ -83,6 +83,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="gitego" class="level1">
 <h1>gitego</h1>
 <p><img src="logo.jpg" class="img-fluid"></p>
+<p><a href="https://github.com/bgreenwell/gitego/actions/workflows/go-ci.yml"><img src="https://github.com/bgreenwell/gitego/actions/workflows/go-ci.yml/badge.svg" class="img-fluid" alt="Build Status"></a> <a href="https://goreportcard.com/report/github.com/bgreenwell/gitego"><img src="https://goreportcard.com/badge/github.com/bgreenwell/gitego.png" class="img-fluid" alt="Go Report Card"></a> <a href="https://pkg.go.dev/github.com/bgreenwell/gitego"><img src="https://pkg.go.dev/badge/github.com/bgreenwell/gitego.svg" class="img-fluid" alt="Go Reference"></a> <img src="https://img.shields.io/badge/go%20version-%3E=1.21-61CFDD.svg" class="img-fluid" alt="Go Version"> <a href="https://github.com/bgreenwell/gitego/releases/latest"><img src="https://img.shields.io/github/v/release/bgreenwell/gitego.png" class="img-fluid" alt="Latest Release"></a> <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" class="img-fluid" alt="License: MIT"></a></p>
+<p><strong>WARNING: This project is in early development and may change significantly.</strong></p>
 <p><strong>Your Git identity manager and automatic profile switcher.</strong></p>
 <p><code>gitego</code> is a command-line tool designed to completely eliminate the risk of committing to a repository with the wrong user identity. It allows you to define separate profiles for work, personal projects, and clients, and then automatically switch between them based on your working directory.</p>
 <p>It seamlessly manages your <code>user.name</code>, <code>user.email</code>, SSH keys, and Personal Access Tokens (PATs), acting as a unified and intelligent manager for your Git identity.</p>
@@ -112,8 +114,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Set gitego as the one and only helper, using the required '\!' prefix</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> config <span class="at">--global</span> <span class="at">--add</span> credential.helper <span class="st">"!gitego credential"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
-<section id="example-usage-walkthrough" class="level2">
-<h2 class="anchored" data-anchor-id="example-usage-walkthrough">Example usage walkthrough</h2>
+<section id="example-usage" class="level2">
+<h2 class="anchored" data-anchor-id="example-usage">Example usage</h2>
 <p>Here’s a typical workflow for setting up and using <code>gitego</code>.</p>
 <section id="add-your-profiles" class="level4">
 <h4 class="anchored" data-anchor-id="add-your-profiles">1. Add your profiles</h4>
