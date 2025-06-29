@@ -2,7 +2,7 @@
 
 ![](assets/logo.jpg)
 <audio controls>
-  <source src="https://github.com/bgreenwell/gitego/raw/refs/heads/main/assets/sound.m4a" type="audio/mp4">
+  <source src="https://raw.githubusercontent.com/bgreenwell/gitego/main/assets/sound.m4a" type="audio/mp4">
   Your browser does not support the audio element.
 </audio>
 
