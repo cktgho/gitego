@@ -10,8 +10,7 @@ import (
 )
 
 // The version of the application.
-// FIXME: In a real-world application, this would be set at build time using ldflags.
-var version = "0.1.0"
+var version = "dev" // "dev" is a good default for local builds
 
 var (
 	// versionFlag is a flag to print the version and exit.
