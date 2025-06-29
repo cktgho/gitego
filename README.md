@@ -1,6 +1,11 @@
 # gitego
 
 ![](assets/logo.jpg)
+<audio controls>
+  <source src="https://github.com/bgreenwell/gitego/raw/refs/heads/main/assets/sound.m4a" type="audio/mp4">
+  Your browser does not support the audio element.
+</audio>
+
 
 [![Build Status](https://github.com/bgreenwell/gitego/actions/workflows/go-ci.yml/badge.svg)](https://github.com/bgreenwell/gitego/actions/workflows/go-ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bgreenwell/gitego)](https://goreportcard.com/report/github.com/bgreenwell/gitego)
