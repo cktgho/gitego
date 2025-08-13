@@ -1,11 +1,4 @@
-<pre style="font-family: 'Courier New', Courier, monospace; font-size: 14px;">
-<span style="color: #ff69b4;">  ██████╗  ██╗ ████████╗ ███████╗  ██████╗   ██████╗</span>
-<span style="color: #e066c7;"> ██╔════╝  ██║ ╚══██╔══╝ ██╔════╝ ██╔════╝  ██╔═══██╗</span>
-<span style="color: #c263da;"> ██║  ███╗ ██║    ██║    █████╗   ██║  ███╗ ██║   ██║</span>
-<span style="color: #a560ed;"> ██║   ██║ ██║    ██║    ██╔══╝   ██║   ██║ ██║   ██║</span>
-<span style="color: #875dff;"> ╚██████╔╝ ██║    ██║    ███████╗ ╚██████╔╝ ╚██████╔╝</span>
-<span style="color: #6a5acd;">  ╚═════╝  ╚═╝    ╚═╝    ╚══════╝  ╚═════╝   ╚═════╝</span>
-</pre>
+![](assets/logo.svg)
 
 [![Build Status](https://github.com/bgreenwell/gitego/actions/workflows/go-ci.yml/badge.svg)](https://github.com/bgreenwell/gitego/actions/workflows/go-ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bgreenwell/gitego)](https://goreportcard.com/report/github.com/bgreenwell/gitego)

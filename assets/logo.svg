@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 100" width="620" height="100" style="background-color: transparent;">
+  <style>
+    .ascii-text {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      font-weight: normal;
+      white-space: pre;
+      dominant-baseline: text-before-edge;
+    }
+  </style>
+  <text x="5" y="5" class="ascii-text" fill="#ff69b4">  ██████╗  ██╗ ████████╗ ███████╗  ██████╗   ██████╗</text>
+  <text x="5" y="21" class="ascii-text" fill="#e066c7"> ██╔════╝  ██║ ╚══██╔══╝ ██╔════╝ ██╔════╝  ██╔═══██╗</text>
+  <text x="5" y="37" class="ascii-text" fill="#c263da"> ██║  ███╗ ██║    ██║    █████╗   ██║  ███╗ ██║   ██║</text>
+  <text x="5" y="53" class="ascii-text" fill="#a560ed"> ██║   ██║ ██║    ██║    ██╔══╝   ██║   ██║ ██║   ██║</text>
+  <text x="5" y="69" class="ascii-text" fill="#875dff"> ╚██████╔╝ ██║    ██║    ███████╗ ╚██████╔╝ ╚██████╔╝</text>
+  <text x="5" y="85" class="ascii-text" fill="#6a5acd">  ╚═════╝  ╚═╝    ╚═╝    ╚══════╝  ╚═════╝   ╚═════╝</text>
+</svg>
