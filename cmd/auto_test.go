@@ -106,4 +106,3 @@ func validateAutoCommandEffects(t *testing.T, savedConfig bool, ensuredProfile, 
 		t.Errorf("Expected path passed to AddIncludeIf to have a trailing slash, got '%s'", includedPath)
 	}
 }
-

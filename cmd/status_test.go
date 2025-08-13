@@ -116,4 +116,3 @@ func runStatusTestScenario(t *testing.T, runner *statusRunner, targetDir, expect
 		t.Errorf("Expected output to contain name '%s', but it didn't.\nOutput:\n%s", expectedUser, output)
 	}
 }
-

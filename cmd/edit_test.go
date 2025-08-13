@@ -99,4 +99,3 @@ func validateEditCommandResults(t *testing.T, mockCfg *config.Config, patSetForP
 		t.Error("Expected SetToken to be called with the new PAT for the 'work' profile.")
 	}
 }
-

@@ -62,7 +62,9 @@ func TestRmCommand(t *testing.T) {
 
 	// Execute the command to remove the "work" profile
 	args := []string{"work"}
-	forceFlag = true; runner.run(rmCmd, args)
+	forceFlag = true
+
+	runner.run(rmCmd, args)
 
 	forceFlag = false
 
@@ -108,4 +110,3 @@ func validateRmCommandEffects(t *testing.T, saved bool, removedIncludeIf, remove
 		t.Error("Expected DeleteToken to be called for 'work' profile.")
 	}
 }
-
