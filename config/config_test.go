@@ -17,7 +17,7 @@ func TestLoad_Success(t *testing.T) {
 	}
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			t.Errorf("Failed to remove temp directory: %v", err)
+			t.Logf("Warning: Failed to remove temp directory (this is common on Windows): %v", err)
 		}
 	}()
 
@@ -106,7 +106,7 @@ func TestLoad_EmptyFile(t *testing.T) {
 	}
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			t.Errorf("Failed to remove temp directory: %v", err)
+			t.Logf("Warning: Failed to remove temp directory (this is common on Windows): %v", err)
 		}
 	}()
 
@@ -145,7 +145,7 @@ func TestLoad_MalformedYAML(t *testing.T) {
 	}
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			t.Errorf("Failed to remove temp directory: %v", err)
+			t.Logf("Warning: Failed to remove temp directory (this is common on Windows): %v", err)
 		}
 	}()
 
@@ -180,7 +180,7 @@ func TestRemoveIncludeIf_MultipleRulesWithSpaces(t *testing.T) {
 	}
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			t.Errorf("Failed to remove temp directory: %v", err)
+			t.Logf("Warning: Failed to remove temp directory (this is common on Windows): %v", err)
 		}
 	}()
 

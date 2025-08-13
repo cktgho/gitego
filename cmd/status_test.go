@@ -51,7 +51,7 @@ func setupStatusTestEnvironment(t *testing.T) (tempDir, workDir string, mockCfg 
 			t.Errorf("Failed to restore original working directory: %v", err)
 		}
 		if err := os.RemoveAll(tempDir); err != nil {
-			t.Errorf("Failed to remove temp directory: %v", err)
+			t.Logf("Warning: Failed to remove temp directory (this is common on Windows): %v", err)
 		}
 	}
 

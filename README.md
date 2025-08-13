@@ -119,6 +119,34 @@ When you `cd` into `~/dev/work/any-repo`, your `user.name`, `user.email`, and `s
 
 -----
 
+## Use cases
+
+`gitego` solves real-world identity management challenges for developers across various scenarios:
+
+### 🏢 **Professional development**
+- **Freelancers/contractors**: Manage separate identities for different clients without credential mix-ups
+- **Corporate + side projects**: Keep work, open-source, and consulting identities completely separate
+- **Agency work**: Different branding and credentials for each client project
+
+### 🔒 **Security & compliance**
+- **Multi-environment access**: Different tokens for dev/staging/production to prevent accidents
+- **Audit requirements**: Trackable identities for different types of work (features, hotfixes, reviews)
+- **Enterprise security**: Credential isolation mandated by corporate security policies
+
+### 🚀 **DevOps & operations**
+- **Multi-cloud management**: Separate credentials for AWS, GCP, Azure environments
+- **Infrastructure teams**: Different access levels for different infrastructure components
+- **Deployment safety**: Prevent catastrophic deployments due to wrong environment credentials
+
+### 🎓 **Educational & personal**
+- **Students**: Separate school, internship, and personal project identities
+- **Instructors**: Clean separation between teaching materials and personal work
+- **Open source**: Different authority levels as maintainer vs. contributor
+
+### 💡 **Common pain points solved**
+- ❌ **Before**: Manual `git config` switching, accidental wrong commits, security breaches
+- ✅ **After**: Automatic switching, zero-risk management, professional separation
+
 ## Commands
 
 | Command | Alias | Description |

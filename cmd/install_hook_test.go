@@ -84,11 +84,13 @@ func setupTestRepoAndChangeDir(t *testing.T, originalWd string) (repoRoot, hooks
 	}
 
 	cleanup = func() {
-		if err := os.RemoveAll(repoRoot); err != nil {
-			t.Errorf("Failed to remove test repo: %v", err)
-		}
+		// Change back to original directory first (required for Windows)
 		if err := os.Chdir(originalWd); err != nil {
 			t.Errorf("Failed to restore original working directory: %v", err)
+		}
+		// Now we can safely remove the repo directory
+		if err := os.RemoveAll(repoRoot); err != nil {
+			t.Logf("Warning: Failed to remove test repo (this is common on Windows): %v", err)
 		}
 	}
 
