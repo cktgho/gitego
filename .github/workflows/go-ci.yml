@@ -33,13 +33,11 @@ jobs:
         # If it produces any output, the `test` command will fail the step.
         test -z "$(gofmt -l .)" || (echo "Go files are not formatted. Please run 'gofmt -s -w .' and commit the changes." && exit 1)
 
-    # Step 4: Install our linter.
-    - name: Install golangci-lint
-      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-    # Step 5: Run the linter.
-    - name: Run linter
-      run: golangci-lint run
+    # Step 4: Run the linter.
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
 
   # The 'build-and-test' job will run our tests.
   build-and-test:
