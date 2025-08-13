@@ -33,6 +33,7 @@ func TestCredentialCommand(t *testing.T) {
 			if profileName == "work" {
 				return "secret-work-token", nil
 			}
+
 			return "", nil
 		},
 		// Simulate Git providing some input, which we ignore
@@ -41,6 +42,7 @@ func TestCredentialCommand(t *testing.T) {
 
 	// 3. Capture the stdout of the command
 	var stdoutBuf bytes.Buffer
+
 	runner.stdout = &stdoutBuf
 
 	// 4. Execute the command's logic

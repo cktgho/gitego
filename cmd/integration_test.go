@@ -1,6 +1,6 @@
 // cmd/integration_test.go
 
-package cmd
+package cmd_test
 
 import (
 	"os"
@@ -26,6 +26,7 @@ func TestMain(m *testing.M) {
 	defer os.RemoveAll(tempDir)
 
 	gitegoBinary = filepath.Join(tempDir, "gitego.exe") // .exe is safe for non-Windows OSes
+
 	buildCmd := exec.Command("go", "build", "-o", gitegoBinary, "..")
 	if err := buildCmd.Run(); err != nil {
 		panic("Failed to build gitego binary: " + err.Error())
@@ -39,12 +40,15 @@ func TestMain(m *testing.M) {
 // setupTestEnvironment creates a clean temporary home directory for a test run.
 func setupTestEnvironment(t *testing.T) (homeDir string) {
 	t.Helper()
+
 	homeDir, err := os.MkdirTemp("", "gitego-home-")
 	if err != nil {
 		t.Fatalf("Failed to create temp home dir: %v", err)
 	}
+
 	t.Setenv("HOME", homeDir)
 	t.Setenv("USERPROFILE", homeDir) // for Windows
+
 	return homeDir
 }
 
@@ -56,65 +60,93 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	homeDir := setupTestEnvironment(t)
 	defer os.RemoveAll(homeDir)
 
-	gitConfigPath := filepath.Join(homeDir, ".gitconfig")
-	gitegoConfigPath := filepath.Join(homeDir, ".gitego", "config.yaml")
+	paths := setupIntegrationPaths(homeDir)
 
-	// --- Step 1: Add a profile ---
+	runIntegrationAddProfile(t)
+	runIntegrationUseProfile(t)
+	validateIntegrationUseProfile(t, paths.gitConfig)
+	runIntegrationAutoRule(t, homeDir)
+	validateIntegrationAutoRule(t, paths.gitConfig)
+	runIntegrationRemoveProfile(t)
+	validateIntegrationRemoveProfile(t, paths.gitConfig, paths.gitegoConfig)
+}
+
+func setupIntegrationPaths(homeDir string) struct{ gitConfig, gitegoConfig string } {
+	return struct{ gitConfig, gitegoConfig string }{
+		gitConfig:    filepath.Join(homeDir, ".gitconfig"),
+		gitegoConfig: filepath.Join(homeDir, ".gitego", "config.yaml"),
+	}
+}
+
+func runIntegrationAddProfile(t *testing.T) {
 	addCmd := exec.Command(gitegoBinary, "add", "work", "--name", "Test User", "--email", "test@work.com")
-	addCmd.Env = os.Environ() // Ensure it uses the temp HOME
+	addCmd.Env = os.Environ()
+
 	if err := addCmd.Run(); err != nil {
 		t.Fatalf("gitego add command failed: %v", err)
 	}
+}
 
-	// --- Step 2: Use the profile ---
+func runIntegrationUseProfile(t *testing.T) {
 	useCmd := exec.Command(gitegoBinary, "use", "work")
 	useCmd.Env = os.Environ()
+
 	if err := useCmd.Run(); err != nil {
 		t.Fatalf("gitego use command failed: %v", err)
 	}
+}
 
-	// Assert that .gitconfig was updated
+func validateIntegrationUseProfile(t *testing.T, gitConfigPath string) {
 	gitConfigBytes, _ := os.ReadFile(gitConfigPath)
+
 	gitConfigContent := string(gitConfigBytes)
-	if !strings.Contains(gitConfigContent, "name = Test User") || !strings.Contains(gitConfigContent,
-		"email = test@work.com") {
+	if !strings.Contains(gitConfigContent, "name = Test User") ||
+		!strings.Contains(gitConfigContent, "email = test@work.com") {
 		t.Fatal(".gitconfig was not updated correctly by 'use' command.")
 	}
+}
 
-	// --- Step 3: Set an auto rule ---
+func runIntegrationAutoRule(t *testing.T, homeDir string) {
 	autoDir := filepath.Join(homeDir, "work-projects")
 	os.Mkdir(autoDir, 0755)
 
 	autoCmd := exec.Command(gitegoBinary, "auto", autoDir, "work")
 	autoCmd.Env = os.Environ()
+
 	if err := autoCmd.Run(); err != nil {
 		t.Fatalf("gitego auto command failed: %v", err)
 	}
+}
 
-	// Assert that .gitconfig has the includeIf rule
-	gitConfigBytes, _ = os.ReadFile(gitConfigPath)
-	gitConfigContent = string(gitConfigBytes)
+func validateIntegrationAutoRule(t *testing.T, gitConfigPath string) {
+	gitConfigBytes, _ := os.ReadFile(gitConfigPath)
+
+	gitConfigContent := string(gitConfigBytes)
 	if !strings.Contains(gitConfigContent, "[includeIf") {
 		t.Fatal(".gitconfig was not updated with an includeIf rule by 'auto' command.")
 	}
+}
 
-	// --- Step 4: Remove the profile and assert cleanup ---
+func runIntegrationRemoveProfile(t *testing.T) {
 	rmCmd := exec.Command(gitegoBinary, "rm", "work", "--force")
 	rmCmd.Env = os.Environ()
+
 	if err := rmCmd.Run(); err != nil {
 		t.Fatalf("gitego rm command failed: %v", err)
 	}
+}
 
-	// Assert that gitego config is now empty
+func validateIntegrationRemoveProfile(t *testing.T, gitConfigPath, gitegoConfigPath string) {
 	gitegoConfigBytes, _ := os.ReadFile(gitegoConfigPath)
+
 	gitegoConfigContent := string(gitegoConfigBytes)
 	if strings.Contains(gitegoConfigContent, "work:") {
 		t.Fatal("Profile 'work' was not removed from gitego's config.yaml.")
 	}
 
-	// Assert that the includeIf rule was removed from .gitconfig
-	gitConfigBytes, _ = os.ReadFile(gitConfigPath)
-	gitConfigContent = string(gitConfigBytes)
+	gitConfigBytes, _ := os.ReadFile(gitConfigPath)
+
+	gitConfigContent := string(gitConfigBytes)
 	if strings.Contains(gitConfigContent, "[includeIf") {
 		t.Fatal("The includeIf rule was not cleaned up from .gitconfig by 'rm' command.")
 	}

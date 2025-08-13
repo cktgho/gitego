@@ -16,11 +16,11 @@ linters-settings:
   # Configure depguard to allow necessary imports for our project.
   depguard:
     rules:
-      main:
+      Main:
         allow:
-          - $standard
+          - $gostd
           - github.com/bgreenwell/gitego
-          - github.com/spf13
+          - github.com/spf13/cobra
           - github.com/zalando/go-keyring
           - gopkg.in/yaml.v3
   # Increase the complexity tolerance slightly for now.
@@ -28,17 +28,26 @@ linters-settings:
     max-complexity: 15
   funlen:
     lines: 80 # Allow functions to be a bit longer, especially in tests.
-    statements: 50
+    statements: 60
   gocognit:
     min-complexity: 40 # Increase the cognitive complexity limit.
   lll:
     line-length: 120
+  wsl_v5:
+    allow-first-in-block: true
+    allow-whole-block: false
+    branch-max-lines: 2
 
 # Linters to enable. We start with a standard, essential set.
 linters:
   default: fast
+  enable:
+    - wsl_v5
   disable:
     - gochecknoinits
+    - depguard
+    - testpackage
+    - wsl
 
 # How to report issues.
 issues:

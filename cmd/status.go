@@ -21,6 +21,7 @@ func (sr *statusRunner) run(cmd *cobra.Command, args []string) {
 
 	if errName != nil || errEmail != nil {
 		cmd.PrintErrln("Not inside a Git repository or user not configured.")
+
 		return
 	}
 
@@ -30,6 +31,7 @@ func (sr *statusRunner) run(cmd *cobra.Command, args []string) {
 	}
 
 	source := "Global Git Config"
+
 	if cfg != nil {
 		// This will check the current directory against the loaded rules.
 		_, ruleSource := cfg.GetActiveProfileForCurrentDir()

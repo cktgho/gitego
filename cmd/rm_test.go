@@ -8,9 +8,9 @@ import (
 	"github.com/bgreenwell/gitego/config"
 )
 
-func TestRmCommand(t *testing.T) {
-	// 1. Setup: Create mock config and state trackers
-	mockCfg := &config.Config{
+// setupRmTestConfig creates a mock config for rm command testing.
+func setupRmTestConfig() *config.Config {
+	return &config.Config{
 		Profiles: map[string]*config.Profile{
 			"work":     {Name: "Work User", Email: "work@example.com"},
 			"personal": {Name: "Personal User", Email: "personal@example.com"},
@@ -20,46 +20,65 @@ func TestRmCommand(t *testing.T) {
 			{Path: "/path/to/personal", Profile: "personal"},
 		},
 	}
+}
+
+func TestRmCommand(t *testing.T) {
+	// Setup: Create mock config and state trackers
+	mockCfg := setupRmTestConfig()
 
 	var removedIncludeIf, removedProfileCfg, deletedToken string
+
 	var saved bool
 
-	// 2. Create a test runner with mock functions
+	// Create a test runner with mock functions
 	runner := &rmRunner{
 		load: func() (*config.Config, error) {
-			// Return a copy to prevent the test from modifying the original mock
 			cfgCopy := *mockCfg
+
 			return &cfgCopy, nil
 		},
 		save: func(c *config.Config) error {
 			saved = true
-			mockCfg = c // Update the "persisted" config
+			*mockCfg = *c
+
 			return nil
 		},
 		removeIncludeIf: func(profileName string) error {
 			removedIncludeIf = profileName
+
 			return nil
 		},
 		removeProfileCfg: func(profileName string) error {
 			removedProfileCfg = profileName
+
 			return nil
 		},
 		deleteToken: func(profileName string) error {
 			deletedToken = profileName
+
 			return nil
 		},
 	}
 
-	// 3. Execute the command to remove the "work" profile
+	// Execute the command to remove the "work" profile
 	args := []string{"work"}
-	forceFlag = true // Use force to bypass interactive prompt in test
-	runner.run(rmCmd, args)
-	forceFlag = false // Reset flag
+	forceFlag = true; runner.run(rmCmd, args)
 
-	// 4. Assertions
+	forceFlag = false
+
+	// Assertions
+	validateProfileRemoval(t, mockCfg)
+	validateRmCommandEffects(t, saved, removedIncludeIf, removedProfileCfg, deletedToken)
+}
+
+// validateProfileRemoval validates that the profile was properly removed.
+func validateProfileRemoval(t *testing.T, mockCfg *config.Config) {
+	t.Helper()
+
 	if _, exists := mockCfg.Profiles["work"]; exists {
 		t.Error("Expected 'work' profile to be deleted from config, but it still exists.")
 	}
+
 	if len(mockCfg.Profiles) != 1 {
 		t.Errorf("Expected 1 profile to remain, but found %d", len(mockCfg.Profiles))
 	}
@@ -67,6 +86,11 @@ func TestRmCommand(t *testing.T) {
 	if len(mockCfg.AutoRules) != 1 || mockCfg.AutoRules[0].Profile != "personal" {
 		t.Error("Expected auto-rule for 'work' profile to be removed.")
 	}
+}
+
+// validateRmCommandEffects validates all side effects of the rm command.
+func validateRmCommandEffects(t *testing.T, saved bool, removedIncludeIf, removedProfileCfg, deletedToken string) {
+	t.Helper()
 
 	if !saved {
 		t.Error("Expected config.Save() to be called, but it wasn't.")
@@ -84,3 +108,4 @@ func TestRmCommand(t *testing.T) {
 		t.Error("Expected DeleteToken to be called for 'work' profile.")
 	}
 }
+

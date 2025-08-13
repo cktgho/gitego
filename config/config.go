@@ -53,6 +53,7 @@ func init() {
 	if err != nil {
 		panic(fmt.Sprintf("could not get user home directory: %v", err))
 	}
+
 	gitegoConfigPath = filepath.Join(home, ".gitego", "config.yaml")
 	profilesDir = filepath.Join(home, ".gitego", "profiles")
 	gitConfigPath = filepath.Join(home, ".gitconfig")
@@ -63,13 +64,16 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		Profiles: make(map[string]*Profile),
 	}
+
 	data, err := os.ReadFile(gitegoConfigPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return cfg, nil
 		}
+
 		return nil, fmt.Errorf("could not read config file: %w", err)
 	}
+
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("could not parse config file: %w", err)
 	}
@@ -114,18 +118,38 @@ func (c *Config) Save() error {
 
 func (c *Config) GetActiveProfileForCurrentDir() (profileName, source string) {
 	profileName = c.ActiveProfile
-	source = "Global gitego default"
-	if c.ActiveProfile == "" {
-		source = "No active gitego profile"
-	}
+	source = getDefaultSource(c.ActiveProfile)
 
 	if len(c.AutoRules) == 0 {
 		return profileName, source
 	}
 
-	currentDir, err := os.Getwd()
+	currentAbsDir, err := getCurrentAbsDir()
 	if err != nil {
 		return profileName, source
+	}
+
+	bestMatch := c.findBestMatchingRule(currentAbsDir)
+	if bestMatch != nil {
+		profileName = bestMatch.Profile
+		source = fmt.Sprintf("gitego auto-rule for profile '%s'", bestMatch.Profile)
+	}
+
+	return profileName, source
+}
+
+func getDefaultSource(activeProfile string) string {
+	if activeProfile == "" {
+		return "No active gitego profile"
+	}
+
+	return "Global gitego default"
+}
+
+func getCurrentAbsDir() (string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", err
 	}
 
 	evalDir, err := filepath.EvalSymlinks(currentDir)
@@ -135,38 +159,47 @@ func (c *Config) GetActiveProfileForCurrentDir() (profileName, source string) {
 
 	currentAbsDir, err := filepath.Abs(evalDir)
 	if err != nil {
-		return profileName, source
+		return "", err
 	}
-	currentAbsDir = filepath.ToSlash(currentAbsDir)
 
+	currentAbsDir = filepath.ToSlash(currentAbsDir)
 	if !strings.HasSuffix(currentAbsDir, "/") {
 		currentAbsDir += "/"
 	}
 
+	return currentAbsDir, nil
+}
+
+func (c *Config) findBestMatchingRule(currentAbsDir string) *AutoRule {
+	var bestMatch *AutoRule
+
 	bestMatchPath := ""
+
 	for _, rule := range c.AutoRules {
 		ruleAbsPath, err := cleanPath(rule.Path)
 		if err != nil {
 			continue
 		}
 
-		compareDir := currentAbsDir
-		compareRulePath := ruleAbsPath
-		if runtime.GOOS == "windows" {
-			compareDir = strings.ToLower(compareDir)
-			compareRulePath = strings.ToLower(compareRulePath)
-		}
-
-		if strings.HasPrefix(compareDir, compareRulePath) {
-			if len(ruleAbsPath) > len(bestMatchPath) {
-				bestMatchPath = ruleAbsPath
-				profileName = rule.Profile
-				source = fmt.Sprintf("gitego auto-rule for profile '%s'", rule.Profile)
-			}
+		if c.isPathMatch(currentAbsDir, ruleAbsPath) && len(ruleAbsPath) > len(bestMatchPath) {
+			bestMatchPath = ruleAbsPath
+			bestMatch = rule
 		}
 	}
 
-	return profileName, source
+	return bestMatch
+}
+
+func (c *Config) isPathMatch(currentAbsDir, ruleAbsPath string) bool {
+	compareDir := currentAbsDir
+	compareRulePath := ruleAbsPath
+
+	if runtime.GOOS == "windows" {
+		compareDir = strings.ToLower(compareDir)
+		compareRulePath = strings.ToLower(compareRulePath)
+	}
+
+	return strings.HasPrefix(compareDir, compareRulePath)
 }
 
 func cleanPath(path string) (string, error) {
@@ -174,15 +207,18 @@ func cleanPath(path string) (string, error) {
 	if err != nil {
 		ruleEvalPath = path
 	}
+
 	ruleAbsPath, err := filepath.Abs(ruleEvalPath)
 	if err != nil {
 		return "", err
 	}
+
 	ruleAbsPath = filepath.ToSlash(ruleAbsPath)
 
 	if !strings.HasSuffix(ruleAbsPath, "/") {
 		ruleAbsPath += "/"
 	}
+
 	return ruleAbsPath, nil
 }
 
@@ -200,6 +236,7 @@ func EnsureProfileGitconfig(profileName string, profile *Profile) error {
 	}
 
 	filePath := filepath.Join(profilesDir, fmt.Sprintf("%s.gitconfig", profileName))
+
 	return os.WriteFile(filePath, []byte(content), filePermissions)
 }
 
@@ -214,13 +251,16 @@ func AddIncludeIf(profileName string, dirPath string) error {
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("could not open global .gitconfig: %w", err)
 	}
+
 	if file != nil {
 		defer file.Close()
+
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			lineFromConfig := filepath.ToSlash(scanner.Text())
 			if strings.Contains(lineFromConfig, profileConfigPath) {
 				fmt.Printf("✓ Auto-switch rule for profile '%s' on path '%s' already exists.\n", profileName, dirPath)
+
 				return nil
 			}
 		}
@@ -237,6 +277,7 @@ func AddIncludeIf(profileName string, dirPath string) error {
 	}
 
 	fmt.Printf("✓ Added auto-switch rule to ~/.gitconfig:\n%s\n", displayLine)
+
 	return nil
 }
 
@@ -250,44 +291,65 @@ func RemoveIncludeIf(profileName string) error {
 		if os.IsNotExist(err) {
 			return nil
 		}
+
 		return err
 	}
 
 	lines := strings.Split(string(input), "\n")
+	newLines := removeGitegoRules(lines, profileConfigPath)
+	output := formatOutput(newLines)
+
+	return os.WriteFile(gitConfigPath, []byte(output), filePermissions)
+}
+
+func removeGitegoRules(lines []string, profileConfigPath string) []string {
 	var newLines []string
+
 	var removing bool
 
-	for i := 0; i < len(lines); i++ {
-		line := lines[i]
+	for i, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
 
-		if strings.HasPrefix(trimmedLine, "[includeIf") {
-			if isGitegoRule(lines, i, profileConfigPath) {
-				removing = true
-				if i > 0 && strings.TrimSpace(lines[i-1]) == "# gitego auto-switch rule" {
-					if len(newLines) > 0 {
-						newLines = newLines[:len(newLines)-1]
-					}
-				}
-			}
+		if strings.HasPrefix(trimmedLine, "[includeIf") && isGitegoRule(lines, i, profileConfigPath) {
+			removing = true
+			newLines = removeCommentIfPresent(newLines, lines, i)
+
+			continue
 		}
 
 		if !removing {
 			newLines = append(newLines, line)
 		}
 
-		if removing && strings.HasPrefix(trimmedLine, "[") && !strings.HasPrefix(trimmedLine, "[includeIf") {
+		if removing && isNewSection(trimmedLine) {
 			removing = false
 		}
 	}
 
-	output := strings.Join(newLines, "\n")
+	return newLines
+}
+
+func removeCommentIfPresent(newLines []string, lines []string, i int) []string {
+	if i > 0 && strings.TrimSpace(lines[i-1]) == "# gitego auto-switch rule" && len(newLines) > 0 {
+		return newLines[:len(newLines)-1]
+	}
+
+	return newLines
+}
+
+func isNewSection(trimmedLine string) bool {
+	return strings.HasPrefix(trimmedLine, "[") && !strings.HasPrefix(trimmedLine, "[includeIf")
+}
+
+func formatOutput(lines []string) string {
+	output := strings.Join(lines, "\n")
 	output = strings.TrimSpace(output)
+
 	if output != "" {
 		output += "\n"
 	}
 
-	return os.WriteFile(gitConfigPath, []byte(output), filePermissions)
+	return output
 }
 
 func isGitegoRule(lines []string, index int, profileConfigPath string) bool {
@@ -296,9 +358,11 @@ func isGitegoRule(lines []string, index int, profileConfigPath string) bool {
 		if strings.HasPrefix(nextLineTrimmed, "[") {
 			return false
 		}
+
 		if strings.HasPrefix(nextLineTrimmed, "path") {
 			return strings.Contains(filepath.ToSlash(nextLineTrimmed), profileConfigPath)
 		}
 	}
+
 	return false
 }

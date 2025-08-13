@@ -31,6 +31,7 @@ depending on your current working directory or other contexts.`,
 		// If the version flag is passed, print the version and exit.
 		if versionFlag {
 			fmt.Printf("gitego version %s\n", version)
+
 			return
 		}
 		// Otherwise, show the help information.

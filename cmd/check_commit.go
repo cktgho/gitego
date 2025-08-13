@@ -27,12 +27,14 @@ func (r *checkCommitRunner) run(cmd *cobra.Command, args []string) {
 	gitEmail, err := r.getGitConfig("user.email")
 	if err != nil {
 		r.exit(0)
+
 		return
 	}
 
 	cfg, err := r.loadConfig()
 	if err != nil || len(cfg.AutoRules) == 0 {
 		r.exit(0)
+
 		return
 	}
 
@@ -40,17 +42,20 @@ func (r *checkCommitRunner) run(cmd *cobra.Command, args []string) {
 
 	if expectedProfileName == "" || expectedProfileName == cfg.ActiveProfile {
 		r.exit(0)
+
 		return
 	}
 
 	expectedProfile, exists := cfg.Profiles[expectedProfileName]
 	if !exists {
 		r.exit(0) // Rule points to a non-existent profile, let validation handle warnings.
+
 		return
 	}
 
 	if gitEmail == expectedProfile.Email {
 		r.exit(0)
+
 		return
 	}
 

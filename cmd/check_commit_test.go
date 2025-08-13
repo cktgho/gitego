@@ -29,6 +29,7 @@ func runCheckCommitTest(t *testing.T, cfg *config.Config, gitEmail, userInput st
 			if key == "user.email" {
 				return gitEmail, nil
 			}
+
 			return "", nil
 		},
 		loadConfig: func() (*config.Config, error) { return cfg, nil },
@@ -54,6 +55,7 @@ func TestCheckCommitCommand(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	originalWd, _ := os.Getwd()
+
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change directory: %v", err)
 	}
@@ -83,6 +85,7 @@ func TestCheckCommitCommand(t *testing.T) {
 		if exitCode != 1 {
 			t.Errorf("Expected exit code 1 when user aborts, but got %d", exitCode)
 		}
+
 		if !strings.Contains(stderr, "Commit aborted by user") {
 			t.Errorf("Expected 'aborted' message in stderr, but it was missing. Got:\n%s", stderr)
 		}
@@ -95,6 +98,7 @@ func TestCheckCommitCommand(t *testing.T) {
 		if exitCode != 0 {
 			t.Errorf("Expected exit code 0 when user proceeds, but got %d", exitCode)
 		}
+
 		if !strings.Contains(stderr, "Commit proceeding with mismatched user") {
 			t.Errorf("Expected 'proceeding' message in stderr, but it was missing. Got:\n%s", stderr)
 		}

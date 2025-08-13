@@ -23,27 +23,31 @@ type useRunner struct {
 // run is the core logic for the use command.
 func (u *useRunner) run(cmd *cobra.Command, args []string) {
 	profileName := args[0]
-	cfg, err := u.load()
 
+	cfg, err := u.load()
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
+
 		return
 	}
 
 	profile, exists := cfg.Profiles[profileName]
 	if !exists {
 		fmt.Printf("Error: Profile '%s' not found.\n", profileName)
+
 		return
 	}
 
 	// Action 1: Set the global git config for user name and email.
 	if err := u.setGlobalGit("user.name", profile.Name); err != nil {
 		fmt.Printf("Error setting git user.name: %v\n", err)
+
 		return
 	}
 
 	if err := u.setGlobalGit("user.email", profile.Email); err != nil {
 		fmt.Printf("Error setting git user.email: %v\n", err)
+
 		return
 	}
 
@@ -51,6 +55,7 @@ func (u *useRunner) run(cmd *cobra.Command, args []string) {
 	cfg.ActiveProfile = profileName
 	if err := u.save(cfg); err != nil {
 		fmt.Printf("Error saving active profile setting: %v\n", err)
+
 		return
 	}
 

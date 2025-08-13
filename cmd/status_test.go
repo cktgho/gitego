@@ -10,27 +10,25 @@ import (
 	"testing"
 
 	"github.com/bgreenwell/gitego/config"
+	"github.com/spf13/cobra"
 )
 
-func TestStatusCommand(t *testing.T) {
-	// 1. Setup a temporary directory structure for our test
+// setupStatusTestEnvironment creates a temporary directory structure and mock config for testing.
+func setupStatusTestEnvironment(t *testing.T) (tempDir, workDir string, mockCfg *config.Config, cleanup func()) {
 	tempDir, err := os.MkdirTemp("", "gitego-status-test-")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
 
-	workDir := filepath.Join(tempDir, "work", "project")
+	workDir = filepath.Join(tempDir, "work", "project")
 	if err := os.MkdirAll(workDir, 0755); err != nil {
 		t.Fatalf("Failed to create work dir: %v", err)
 	}
 
 	// Save original working directory to restore later
 	originalWd, _ := os.Getwd()
-	defer os.Chdir(originalWd)
 
-	// 2. Setup mock config
-	mockCfg := &config.Config{
+	mockCfg = &config.Config{
 		Profiles: map[string]*config.Profile{
 			"work": {
 				Name:  "Work User",
@@ -48,7 +46,20 @@ func TestStatusCommand(t *testing.T) {
 		ActiveProfile: "global",
 	}
 
-	// 3. Create a test runner with mocked dependencies
+	cleanup = func() {
+		os.Chdir(originalWd)
+		os.RemoveAll(tempDir)
+	}
+
+	return tempDir, workDir, mockCfg, cleanup
+}
+
+func TestStatusCommand(t *testing.T) {
+	// 1. Setup test environment
+	tempDir, workDir, mockCfg, cleanup := setupStatusTestEnvironment(t)
+	defer cleanup()
+
+	// 2. Create a test runner with mocked dependencies
 	runner := &statusRunner{
 		load: func() (*config.Config, error) {
 			return mockCfg, nil
@@ -58,56 +69,51 @@ func TestStatusCommand(t *testing.T) {
 
 	// --- Scenario 1: Test inside the auto-rule directory ---
 	t.Run("inside auto-rule directory", func(t *testing.T) {
-		if err := os.Chdir(workDir); err != nil {
-			t.Fatalf("Failed to change directory to workDir: %v", err)
-		}
-
 		runner.getGitConfig = func(key string) (string, error) {
 			if key == "user.name" {
 				return "Work User", nil
 			}
+
 			return "work@example.com", nil
 		}
 
-		var buf bytes.Buffer
-		statusCmd.SetOut(&buf)
-		runner.run(statusCmd, []string{})
-		output := buf.String()
-
-		expectedSource := "gitego auto-rule for profile 'work'"
-		if !strings.Contains(output, expectedSource) {
-			t.Errorf("Expected output to contain source '%s', but it didn't.\nOutput:\n%s", expectedSource, output)
-		}
-		if !strings.Contains(output, "Work User") {
-			t.Errorf("Expected output to contain name 'Work User', but it didn't.\nOutput:\n%s", output)
-		}
+		runStatusTestScenario(t, runner, workDir, "gitego auto-rule for profile 'work'", "Work User")
 	})
 
 	// --- Scenario 2: Test outside any auto-rule directory ---
 	t.Run("outside auto-rule directory", func(t *testing.T) {
-		if err := os.Chdir(tempDir); err != nil {
-			t.Fatalf("Failed to change directory to tempDir: %v", err)
-		}
-
 		runner.getGitConfig = func(key string) (string, error) {
 			if key == "user.name" {
 				return "Global User", nil
 			}
+
 			return "global@example.com", nil
 		}
 
-		var buf bytes.Buffer
-		statusCmd.SetOut(&buf)
-		runner.run(statusCmd, []string{})
-		output := buf.String()
-
-		// The expected source is "Global gitego default" because an active_profile is set.
-		expectedSource := "Global gitego default"
-		if !strings.Contains(output, expectedSource) {
-			t.Errorf("Expected output to contain source '%s', but it didn't.\nOutput:\n%s", expectedSource, output)
-		}
-		if !strings.Contains(output, "Global User") {
-			t.Errorf("Expected output to contain name 'Global User', but it didn't.\nOutput:\n%s", output)
-		}
+		runStatusTestScenario(t, runner, tempDir, "Global gitego default", "Global User")
 	})
 }
+
+// runStatusTestScenario executes a status command test scenario with given parameters.
+func runStatusTestScenario(t *testing.T, runner *statusRunner, targetDir, expectedSource, expectedUser string) {
+	if err := os.Chdir(targetDir); err != nil {
+		t.Fatalf("Failed to change directory to %s: %v", targetDir, err)
+	}
+
+	var buf bytes.Buffer
+
+	statusCmd := &cobra.Command{}
+	statusCmd.SetOut(&buf)
+	runner.run(statusCmd, []string{})
+
+	output := buf.String()
+
+	if !strings.Contains(output, expectedSource) {
+		t.Errorf("Expected output to contain source '%s', but it didn't.\nOutput:\n%s", expectedSource, output)
+	}
+
+	if !strings.Contains(output, expectedUser) {
+		t.Errorf("Expected output to contain name '%s', but it didn't.\nOutput:\n%s", expectedUser, output)
+	}
+}
+

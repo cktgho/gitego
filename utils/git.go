@@ -16,10 +16,12 @@ var execCommand = exec.Command
 func GetEffectiveGitConfig(key string) (string, error) {
 	// Use the package-level variable instead of exec.Command directly.
 	cmd := execCommand("git", "config", key)
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }
 
@@ -28,9 +30,11 @@ func GetEffectiveGitConfig(key string) (string, error) {
 func SetGlobalGitConfig(key, value string) error {
 	// Use the package-level variable here as well.
 	cmd := execCommand("git", "config", "--global", key, value)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git command failed: %w\nOutput: %s", err, string(output))
 	}
+
 	return nil
 }

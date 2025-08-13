@@ -33,12 +33,14 @@ auto_rules:
     profile: work
 `
 	tempConfigFile := filepath.Join(tempDir, "config.yaml")
+
 	if err := os.WriteFile(tempConfigFile, []byte(testConfigContent), 0644); err != nil {
 		t.Fatalf("Failed to write temp config file: %v", err)
 	}
 
 	originalConfigPath := gitegoConfigPath
 	gitegoConfigPath = tempConfigFile
+
 	defer func() {
 		gitegoConfigPath = originalConfigPath
 	}()
@@ -51,14 +53,17 @@ auto_rules:
 	if len(cfg.Profiles) != 2 {
 		t.Errorf("Expected 2 profiles, but got %d", len(cfg.Profiles))
 	}
+
 	if profile, ok := cfg.Profiles["work"]; !ok {
 		t.Error("Expected 'work' profile to exist, but it doesn't")
 	} else if profile.Name != "Test User" {
 		t.Errorf("Expected work profile name to be 'Test User', got '%s'", profile.Name)
 	}
+
 	if cfg.ActiveProfile != "personal" {
 		t.Errorf("Expected active profile to be 'personal', got '%s'", cfg.ActiveProfile)
 	}
+
 	if len(cfg.AutoRules) != 1 {
 		t.Errorf("Expected 1 auto_rule, but got %d", len(cfg.AutoRules))
 	}
@@ -69,6 +74,7 @@ func TestLoad_NonExistentFile(t *testing.T) {
 	// Point to a config file in a non-existent directory.
 	originalConfigPath := gitegoConfigPath
 	gitegoConfigPath = "/tmp/non/existent/path/config.yaml"
+
 	defer func() {
 		gitegoConfigPath = originalConfigPath
 	}()
@@ -104,6 +110,7 @@ func TestLoad_EmptyFile(t *testing.T) {
 
 	originalConfigPath := gitegoConfigPath
 	gitegoConfigPath = tempConfigFile
+
 	defer func() {
 		gitegoConfigPath = originalConfigPath
 	}()
@@ -140,6 +147,7 @@ func TestLoad_MalformedYAML(t *testing.T) {
 
 	originalConfigPath := gitegoConfigPath
 	gitegoConfigPath = tempConfigFile
+
 	defer func() {
 		gitegoConfigPath = originalConfigPath
 	}()
@@ -165,6 +173,7 @@ func TestRemoveIncludeIf_MultipleRulesWithSpaces(t *testing.T) {
 	originalProfilesDir := profilesDir
 	gitConfigPath = filepath.Join(tempDir, ".gitconfig")
 	profilesDir = filepath.Join(tempDir, ".gitego", "profiles")
+
 	defer func() {
 		gitConfigPath = originalGitConfigPath
 		profilesDir = originalProfilesDir

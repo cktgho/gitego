@@ -8,9 +8,9 @@ import (
 	"github.com/bgreenwell/gitego/config"
 )
 
-func TestEditCommand(t *testing.T) {
-	// 1. Setup: Create an initial mock config
-	mockCfg := &config.Config{
+// setupEditTestConfig creates a mock config for edit command testing.
+func setupEditTestConfig() *config.Config {
+	return &config.Config{
 		Profiles: map[string]*config.Profile{
 			"work": {
 				Name:     "Original Name",
@@ -19,41 +19,62 @@ func TestEditCommand(t *testing.T) {
 			},
 		},
 	}
-	var patSetForProfile string
-	var patValue string
+}
 
-	// 2. Create the test runner with mocked dependencies
+func TestEditCommand(t *testing.T) {
+	// Setup: Create an initial mock config
+	mockCfg := setupEditTestConfig()
+
+	var patSetForProfile, patValue string
+
+	// Create the test runner with mocked dependencies
 	runner := &editor{
 		load: func() (*config.Config, error) {
-			// Return a copy to ensure the original mock isn't mutated directly
 			cfgCopy := *mockCfg
+
 			return &cfgCopy, nil
 		},
 		save: func(c *config.Config) error {
-			mockCfg = c // Update our "persisted" config
+			*mockCfg = *c
+
 			return nil
 		},
 		setToken: func(profileName, token string) error {
 			patSetForProfile = profileName
 			patValue = token
+
 			return nil
 		},
 	}
 
-	// 3. Execute the command's logic
+	// Execute the command's logic
 	args := []string{"work"}
 
-	// Simulate the user providing only the --email and --pat flags
-	editCmd.Flags().Set("email", "new-email@example.com")
-	editCmd.Flags().Set("pat", "new-pat-123")
+	cleanup := setEditCommandFlags("new-email@example.com", "new-pat-123")
+	defer cleanup()
 
 	runner.run(editCmd, args)
 
-	// Reset flags after run to avoid affecting other tests
-	defer editCmd.Flags().Set("email", "")
-	defer editCmd.Flags().Set("pat", "")
+	// Assertions
+	validateEditCommandResults(t, mockCfg, patSetForProfile, patValue)
+}
 
-	// 4. Assertions
+// setEditCommandFlags sets the command flags for testing.
+func setEditCommandFlags(email, pat string) func() {
+	editCmd.Flags().Set("email", email)
+	editCmd.Flags().Set("pat", pat)
+
+	// Return cleanup function
+	return func() {
+		editCmd.Flags().Set("email", "")
+		editCmd.Flags().Set("pat", "")
+	}
+}
+
+// validateEditCommandResults validates the edit command results.
+func validateEditCommandResults(t *testing.T, mockCfg *config.Config, patSetForProfile, patValue string) {
+	t.Helper()
+
 	updatedProfile, ok := mockCfg.Profiles["work"]
 	if !ok {
 		t.Fatal("The 'work' profile was unexpectedly deleted.")
@@ -68,6 +89,7 @@ func TestEditCommand(t *testing.T) {
 	if updatedProfile.Name != "Original Name" {
 		t.Errorf("Expected name to remain 'Original Name', but it was changed to '%s'", updatedProfile.Name)
 	}
+
 	if updatedProfile.Username != "original_user" {
 		t.Errorf("Expected username to remain 'original_user', but it was changed to '%s'", updatedProfile.Username)
 	}
@@ -77,3 +99,4 @@ func TestEditCommand(t *testing.T) {
 		t.Error("Expected SetToken to be called with the new PAT for the 'work' profile.")
 	}
 }
+

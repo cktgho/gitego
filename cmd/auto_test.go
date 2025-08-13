@@ -10,20 +10,25 @@ import (
 	"github.com/bgreenwell/gitego/config"
 )
 
-func TestAutoCommand(t *testing.T) {
-	// 1. Setup
-	mockCfg := &config.Config{
+// setupAutoTestConfig creates a mock config for auto command testing.
+func setupAutoTestConfig() *config.Config {
+	return &config.Config{
 		Profiles: map[string]*config.Profile{
 			"work": {Name: "Work User", Email: "work@example.com"},
 		},
 		AutoRules: []*config.AutoRule{},
 	}
+}
+
+func TestAutoCommand(t *testing.T) {
+	// Setup
+	mockCfg := setupAutoTestConfig()
 
 	var savedConfig bool
-	var ensuredProfile, includedProfile string
-	var includedPath string
 
-	// 2. Create the test runner with mocked dependencies
+	var ensuredProfile, includedProfile, includedPath string
+
+	// Create the test runner with mocked dependencies
 	runner := &autoRunner{
 		load: func() (*config.Config, error) {
 			cfgCopy := *mockCfg
@@ -32,7 +37,7 @@ func TestAutoCommand(t *testing.T) {
 		},
 		save: func(c *config.Config) error {
 			savedConfig = true
-			mockCfg = c
+			*mockCfg = *c
 
 			return nil
 		},
@@ -49,16 +54,19 @@ func TestAutoCommand(t *testing.T) {
 		},
 	}
 
-	// 3. Execute the command's logic
-	// Use a path that is simple and cross-platform for the test.
+	// Execute the command's logic
 	testPath := filepath.Join("tmp", "work")
 	args := []string{testPath, "work"}
 	runner.run(autoCmd, args)
 
-	// 4. Assertions
-	if !savedConfig {
-		t.Error("Expected the config to be saved, but it wasn't.")
-	}
+	// Assertions
+	validateAutoRuleCreation(t, mockCfg, testPath)
+	validateAutoCommandEffects(t, savedConfig, ensuredProfile, includedProfile, includedPath)
+}
+
+// validateAutoRuleCreation validates that the auto rule was created correctly.
+func validateAutoRuleCreation(t *testing.T, mockCfg *config.Config, testPath string) {
+	t.Helper()
 
 	if len(mockCfg.AutoRules) != 1 {
 		t.Fatalf("Expected 1 auto-rule to be added, but found %d", len(mockCfg.AutoRules))
@@ -71,9 +79,19 @@ func TestAutoCommand(t *testing.T) {
 
 	// Check that the path stored in the rule is absolute and has forward slashes
 	absTestPath, _ := filepath.Abs(testPath)
+
 	expectedPath := filepath.ToSlash(absTestPath) + "/"
 	if rule.Path != expectedPath {
 		t.Errorf("Expected rule path to be '%s', got '%s'", expectedPath, rule.Path)
+	}
+}
+
+// validateAutoCommandEffects validates all side effects of the auto command.
+func validateAutoCommandEffects(t *testing.T, savedConfig bool, ensuredProfile, includedProfile, includedPath string) {
+	t.Helper()
+
+	if !savedConfig {
+		t.Error("Expected the config to be saved, but it wasn't.")
 	}
 
 	if ensuredProfile != "work" {
@@ -88,3 +106,4 @@ func TestAutoCommand(t *testing.T) {
 		t.Errorf("Expected path passed to AddIncludeIf to have a trailing slash, got '%s'", includedPath)
 	}
 }
+

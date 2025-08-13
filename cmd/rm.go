@@ -33,21 +33,26 @@ func (r *rmRunner) run(cmd *cobra.Command, args []string) {
 	cfg, err := r.load()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
+
 		return
 	}
 
 	if _, exists := cfg.Profiles[profileName]; !exists {
 		fmt.Printf("Error: Profile '%s' not found.\n", profileName)
+
 		return
 	}
 
 	if !forceFlag {
 		fmt.Printf("Are you sure you want to remove the profile '%s' and all its rules?\n", profileName)
 		fmt.Print("This cannot be undone. [y/N]: ")
+
 		reader := bufio.NewReader(os.Stdin)
+
 		response, _ := reader.ReadString('\n')
 		if strings.TrimSpace(strings.ToLower(response)) != "y" {
 			fmt.Println("Removal cancelled.")
+
 			return
 		}
 	}
@@ -64,11 +69,13 @@ func (r *rmRunner) run(cmd *cobra.Command, args []string) {
 
 	// 3. Remove any auto-rules from gitego's config that use this profile.
 	var keptRules []*config.AutoRule
+
 	for _, rule := range cfg.AutoRules {
 		if rule.Profile != profileName {
 			keptRules = append(keptRules, rule)
 		}
 	}
+
 	cfg.AutoRules = keptRules
 
 	// 4. Delete the profile itself.
@@ -76,6 +83,7 @@ func (r *rmRunner) run(cmd *cobra.Command, args []string) {
 
 	if err := r.save(cfg); err != nil {
 		fmt.Printf("Error saving configuration: %v\n", err)
+
 		return
 	}
 
@@ -106,6 +114,7 @@ var rmCmd = &cobra.Command{
 					return err
 				}
 				path := filepath.Join(home, ".gitego", "profiles", fmt.Sprintf("%s.gitconfig", profileName))
+
 				return os.Remove(path)
 			},
 		}

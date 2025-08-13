@@ -32,12 +32,14 @@ func (e *editor) run(cmd *cobra.Command, args []string) {
 	cfg, err := e.load()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
+
 		return
 	}
 
 	profile, exists := cfg.Profiles[profileName]
 	if !exists {
 		fmt.Printf("Error: Profile '%s' not found.\n", profileName)
+
 		return
 	}
 
@@ -45,12 +47,15 @@ func (e *editor) run(cmd *cobra.Command, args []string) {
 	if cmd.Flags().Changed("name") {
 		profile.Name = editName
 	}
+
 	if cmd.Flags().Changed("email") {
 		profile.Email = editEmail
 	}
+
 	if cmd.Flags().Changed("username") {
 		profile.Username = editUsername
 	}
+
 	if cmd.Flags().Changed("ssh-key") {
 		profile.SSHKey = editSSHKey
 	}
@@ -58,6 +63,7 @@ func (e *editor) run(cmd *cobra.Command, args []string) {
 	// Save the updated configuration.
 	if err := e.save(cfg); err != nil {
 		fmt.Printf("Error saving configuration: %v\n", err)
+
 		return
 	}
 
@@ -65,6 +71,7 @@ func (e *editor) run(cmd *cobra.Command, args []string) {
 	if cmd.Flags().Changed("pat") {
 		if err := e.setToken(profileName, editPAT); err != nil {
 			fmt.Printf("Warning: Profile updated, but failed to store new PAT securely: %v\n", err)
+
 			return
 		}
 	}

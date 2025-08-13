@@ -18,7 +18,9 @@ func TestUseCommand(t *testing.T) {
 	}
 
 	var savedConfig bool
+
 	var gitConfigCalls = make(map[string]string)
+
 	var setCredentialCalls = make(map[string]string)
 
 	// 2. Create the test runner with mock functions
@@ -29,14 +31,17 @@ func TestUseCommand(t *testing.T) {
 		save: func(c *config.Config) error {
 			savedConfig = true
 			mockCfg = c // "Save" to our in-memory object
+
 			return nil
 		},
 		setGlobalGit: func(key, value string) error {
 			gitConfigCalls[key] = value
+
 			return nil
 		},
 		setGitCredential: func(username, token string) error {
 			setCredentialCalls[username] = token
+
 			return nil
 		},
 		getOS:    func() string { return "linux" }, // Test non-darwin case first
@@ -76,6 +81,7 @@ func TestUseCommand_macOS(t *testing.T) {
 			"work": {Name: "Mac User", Email: "mac@example.com", Username: "mac-user"},
 		},
 	}
+
 	var setCredentialCalls = make(map[string]string)
 
 	runner := &useRunner{
@@ -86,6 +92,7 @@ func TestUseCommand_macOS(t *testing.T) {
 		getOS:        func() string { return "darwin" },
 		setGitCredential: func(username, token string) error {
 			setCredentialCalls[username] = token
+
 			return nil
 		},
 	}

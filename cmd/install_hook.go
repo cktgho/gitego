@@ -36,6 +36,7 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 		gitRoot, err := findGitRoot(".")
 		if err != nil {
 			fmt.Println("Error: Not a git repository (or any of the parent directories).")
+
 			return
 		}
 
@@ -43,6 +44,7 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 		// It's possible the hooks directory doesn't exist in a fresh git init.
 		if err := os.MkdirAll(hooksDir, executableFilePermissions); err != nil {
 			fmt.Printf("Error: Could not create hooks directory: %v\n", err)
+
 			return
 		}
 
@@ -54,11 +56,13 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 			content, err := os.ReadFile(hookPath)
 			if err != nil {
 				fmt.Printf("Error: Could not read existing pre-commit hook: %v\n", err)
+
 				return
 			}
 
 			if strings.Contains(string(content), "gitego internal check-commit") {
 				fmt.Println("✓ gitego pre-commit hook is already installed.")
+
 				return
 			}
 
@@ -70,6 +74,7 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 			if strings.TrimSpace(strings.ToLower(response)) == "n" {
 				fmt.Println("\nInstall cancelled. Please manually add the following line to your pre-commit hook:")
 				fmt.Println("  gitego internal check-commit")
+
 				return
 			}
 
@@ -77,12 +82,14 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 			f, err := os.OpenFile(hookPath, os.O_APPEND|os.O_WRONLY, executableFilePermissions)
 			if err != nil {
 				fmt.Printf("Error: Failed to open existing hook for appending: %v\n", err)
+
 				return
 			}
 			defer f.Close()
 
 			if _, err := f.WriteString(hookScriptContent); err != nil {
 				fmt.Printf("Error: Failed to append to existing hook: %v\n", err)
+
 				return
 			}
 			fmt.Printf("✓ gitego check appended successfully to %s\n", hookPath)
@@ -94,6 +101,7 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 			err = os.WriteFile(hookPath, []byte(newHookContent), executableFilePermissions)
 			if err != nil {
 				fmt.Printf("Error installing hook: %v\n", err)
+
 				return
 			}
 			fmt.Printf("✓ gitego pre-commit hook installed successfully in %s\n", hookPath)
@@ -107,16 +115,20 @@ func findGitRoot(startDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	for {
 		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
 			return dir, nil
 		}
+
 		parent := filepath.Dir(dir)
 		if parent == dir {
 			break
 		}
+
 		dir = parent
 	}
+
 	return "", fmt.Errorf("git root not found")
 }
 

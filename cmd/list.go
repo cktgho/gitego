@@ -34,11 +34,13 @@ The globally active profile is marked with an asterisk (*).`,
 		cfg, err := config.Load()
 		if err != nil {
 			fmt.Printf("Error loading configuration: %v\n", err)
+
 			return
 		}
 
 		if len(cfg.Profiles) == 0 {
 			fmt.Println("No profiles found. Use 'gitego add <profile_name>' to create one.")
+
 			return
 		}
 

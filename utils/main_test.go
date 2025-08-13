@@ -1,5 +1,5 @@
 // utils/main_test.go
-package utils
+package utils_test
 
 import (
 	"os"
