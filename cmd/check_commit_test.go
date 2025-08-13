@@ -52,14 +52,22 @@ func TestCheckCommitCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Failed to remove temp directory: %v", err)
+		}
+	}()
 
 	originalWd, _ := os.Getwd()
 
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Errorf("Failed to restore original working directory: %v", err)
+		}
+	}()
 
 	// Setup a mock config using an absolute path for the rule.
 	mockCfg := &config.Config{

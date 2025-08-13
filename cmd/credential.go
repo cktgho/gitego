@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/bgreenwell/gitego/config"
@@ -51,8 +52,12 @@ func (r *credentialRunner) run(cmd *cobra.Command, args []string) {
 	}
 
 	// Print the credentials to stdout in the format Git expects.
-	fmt.Fprintf(r.stdout, "username=%s\n", profile.Username)
-	fmt.Fprintf(r.stdout, "password=%s\n", token)
+	if _, err := fmt.Fprintf(r.stdout, "username=%s\n", profile.Username); err != nil {
+		log.Printf("Warning: Failed to write username: %v", err)
+	}
+	if _, err := fmt.Fprintf(r.stdout, "password=%s\n", token); err != nil {
+		log.Printf("Warning: Failed to write password: %v", err)
+	}
 }
 
 var credentialCmd = &cobra.Command{

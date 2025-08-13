@@ -92,7 +92,9 @@ func handleGitConfigCommands(args []string) bool {
 	}
 
 	if len(args) == 3 && args[2] == "user.email" {
-		fmt.Fprint(os.Stdout, "test@example.com")
+		if _, err := fmt.Fprint(os.Stdout, "test@example.com"); err != nil {
+			panic("Failed to write to stdout: " + err.Error())
+		}
 
 		return true
 	}

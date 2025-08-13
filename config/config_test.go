@@ -15,7 +15,11 @@ func TestLoad_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Failed to remove temp directory: %v", err)
+		}
+	}()
 
 	testConfigContent := `
 profiles:
@@ -100,7 +104,11 @@ func TestLoad_EmptyFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Failed to remove temp directory: %v", err)
+		}
+	}()
 
 	// Create an empty file.
 	tempConfigFile := filepath.Join(tempDir, "config.yaml")
@@ -135,7 +143,11 @@ func TestLoad_MalformedYAML(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Failed to remove temp directory: %v", err)
+		}
+	}()
 
 	// Malformed YAML with an unclosed quote.
 	malformedContent := `profiles: { work: { name: "Test User }`
@@ -166,7 +178,11 @@ func TestRemoveIncludeIf_MultipleRulesWithSpaces(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Failed to remove temp directory: %v", err)
+		}
+	}()
 
 	// Override global paths to use our temp directory.
 	originalGitConfigPath := gitConfigPath

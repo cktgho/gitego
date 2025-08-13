@@ -60,12 +60,12 @@ func (ar *autoRunner) run(cmd *cobra.Command, args []string) {
 func (ar *autoRunner) validateInputs(profileName string) (*config.Config, *config.Profile, error) {
 	cfg, err := ar.load()
 	if err != nil {
-		return nil, nil, fmt.Errorf("Error loading configuration: %v", err)
+		return nil, nil, fmt.Errorf("error loading configuration: %v", err)
 	}
 
 	profile, exists := cfg.Profiles[profileName]
 	if !exists {
-		return nil, nil, fmt.Errorf("Error: Profile '%s' not found in gitego.", profileName)
+		return nil, nil, fmt.Errorf("profile '%s' not found in gitego", profileName)
 	}
 
 	return cfg, profile, nil
@@ -111,11 +111,11 @@ func (ar *autoRunner) setupAutoRule(
 	fmt.Printf("Setting up new auto-switch rule for profile '%s'...\n", profileName)
 
 	if err := ar.ensureProfileGitconfig(profileName, profile); err != nil {
-		return fmt.Errorf("Error creating profile gitconfig: %v", err)
+		return fmt.Errorf("error creating profile gitconfig: %v", err)
 	}
 
 	if err := ar.addIncludeIf(profileName, cleanPath); err != nil {
-		return fmt.Errorf("Error updating global .gitconfig: %v", err)
+		return fmt.Errorf("error updating global .gitconfig: %v", err)
 	}
 
 	newRule := &config.AutoRule{
@@ -125,7 +125,7 @@ func (ar *autoRunner) setupAutoRule(
 
 	cfg.AutoRules = append(cfg.AutoRules, newRule)
 	if err := ar.save(cfg); err != nil {
-		return fmt.Errorf("Warning: Git config updated, but failed to save rule to gitego config: %v", err)
+		return fmt.Errorf("warning: Git config updated, but failed to save rule to gitego config: %v", err)
 	}
 
 	return nil

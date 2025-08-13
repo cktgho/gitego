@@ -85,7 +85,11 @@ If a pre-commit hook already exists, gitego will ask to append its command.`,
 
 				return
 			}
-			defer f.Close()
+			defer func() {
+				if err := f.Close(); err != nil {
+					fmt.Printf("Warning: Failed to close hook file: %v\n", err)
+				}
+			}()
 
 			if _, err := f.WriteString(hookScriptContent); err != nil {
 				fmt.Printf("Error: Failed to append to existing hook: %v\n", err)

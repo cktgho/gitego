@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -51,11 +52,19 @@ The globally active profile is marked with an asterisk (*).`,
 		sort.Strings(profileNames)
 
 		w := tabwriter.NewWriter(os.Stdout, minwidth, tabwidth, padding, padchar, flags)
-		defer w.Flush()
+		defer func() {
+			if err := w.Flush(); err != nil {
+				log.Printf("Warning: Failed to flush output: %v", err)
+			}
+		}()
 
 		// New, more informative header
-		fmt.Fprintln(w, "ACTIVE\tPROFILE\tNAME\tEMAIL\tATTRIBUTES")
-		fmt.Fprintln(w, "------\t-------\t----\t-----\t----------")
+		if _, err := fmt.Fprintln(w, "ACTIVE\tPROFILE\tNAME\tEMAIL\tATTRIBUTES"); err != nil {
+			log.Printf("Warning: Failed to write header: %v", err)
+		}
+		if _, err := fmt.Fprintln(w, "------\t-------\t----\t-----\t----------"); err != nil {
+			log.Printf("Warning: Failed to write separator: %v", err)
+		}
 
 		for _, name := range profileNames {
 			profile := cfg.Profiles[name]
@@ -77,13 +86,15 @@ The globally active profile is marked with an asterisk (*).`,
 			}
 
 			// 3. Print the enhanced row
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 				activeMarker,
 				name,
 				profile.Name,
 				profile.Email,
 				strings.Join(attributes, " "),
-			)
+			); err != nil {
+				log.Printf("Warning: Failed to write profile row: %v", err)
+			}
 		}
 	},
 }

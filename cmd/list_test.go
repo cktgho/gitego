@@ -44,10 +44,18 @@ func (lr *listRunner) run(cmd *cobra.Command, args []string) {
 
 	// In the test, we write to the command's output stream.
 	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 3, ' ', 0)
-	defer w.Flush()
+	defer func() {
+		if err := w.Flush(); err != nil {
+			fmt.Printf("Warning: Failed to flush output: %v\n", err)
+		}
+	}()
 
-	fmt.Fprintln(w, "ACTIVE\tPROFILE\tNAME\tEMAIL\tATTRIBUTES")
-	fmt.Fprintln(w, "------\t-------\t----\t-----\t----------")
+	if _, err := fmt.Fprintln(w, "ACTIVE\tPROFILE\tNAME\tEMAIL\tATTRIBUTES"); err != nil {
+		fmt.Printf("Warning: Failed to write header: %v\n", err)
+	}
+	if _, err := fmt.Fprintln(w, "------\t-------\t----\t-----\t----------"); err != nil {
+		fmt.Printf("Warning: Failed to write separator: %v\n", err)
+	}
 
 	for _, name := range profileNames {
 		profile := cfg.Profiles[name]
@@ -67,13 +75,15 @@ func (lr *listRunner) run(cmd *cobra.Command, args []string) {
 			attributes = append(attributes, "[PAT]")
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			activeMarker,
 			name,
 			profile.Name,
 			profile.Email,
 			strings.Join(attributes, " "),
-		)
+		); err != nil {
+			fmt.Printf("Warning: Failed to write profile row: %v\n", err)
+		}
 	}
 }
 

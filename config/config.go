@@ -253,7 +253,11 @@ func AddIncludeIf(profileName string, dirPath string) error {
 	}
 
 	if file != nil {
-		defer file.Close()
+		defer func() {
+			if err := file.Close(); err != nil {
+				fmt.Printf("Warning: Failed to close gitconfig file: %v\n", err)
+			}
+		}()
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
@@ -270,7 +274,11 @@ func AddIncludeIf(profileName string, dirPath string) error {
 	if err != nil {
 		return fmt.Errorf("could not open .gitconfig for writing: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Printf("Warning: Failed to close gitconfig file: %v\n", err)
+		}
+	}()
 
 	if _, err := f.WriteString("\n# gitego auto-switch rule\n" + includeLine + "\n"); err != nil {
 		return fmt.Errorf("could not write to .gitconfig: %w", err)

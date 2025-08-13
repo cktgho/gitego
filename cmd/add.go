@@ -5,6 +5,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/bgreenwell/gitego/config"
 	"github.com/spf13/cobra"
@@ -101,6 +102,10 @@ func init() {
 	addCmd.Flags().StringVar(&addSSHKey, "ssh-key", "", "Path to the SSH key for this profile (optional)")
 	addCmd.Flags().StringVar(&addPAT, "pat", "", "Personal Access Token for this profile (stored securely)")
 
-	addCmd.MarkFlagRequired("name")
-	addCmd.MarkFlagRequired("email")
+	if err := addCmd.MarkFlagRequired("name"); err != nil {
+		log.Fatalf("Failed to mark name flag as required: %v", err)
+	}
+	if err := addCmd.MarkFlagRequired("email"); err != nil {
+		log.Fatalf("Failed to mark email flag as required: %v", err)
+	}
 }

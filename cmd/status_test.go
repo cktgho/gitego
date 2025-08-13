@@ -47,8 +47,12 @@ func setupStatusTestEnvironment(t *testing.T) (tempDir, workDir string, mockCfg 
 	}
 
 	cleanup = func() {
-		os.Chdir(originalWd)
-		os.RemoveAll(tempDir)
+		if err := os.Chdir(originalWd); err != nil {
+			t.Errorf("Failed to restore original working directory: %v", err)
+		}
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Failed to remove temp directory: %v", err)
+		}
 	}
 
 	return tempDir, workDir, mockCfg, cleanup

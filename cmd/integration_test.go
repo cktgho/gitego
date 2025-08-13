@@ -23,7 +23,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic("Failed to create temp dir for binary: " + err.Error())
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			panic("Failed to remove temp dir: " + err.Error())
+		}
+	}()
 
 	gitegoBinary = filepath.Join(tempDir, "gitego.exe") // .exe is safe for non-Windows OSes
 
@@ -58,7 +62,11 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	}
 
 	homeDir := setupTestEnvironment(t)
-	defer os.RemoveAll(homeDir)
+	defer func() {
+		if err := os.RemoveAll(homeDir); err != nil {
+			t.Errorf("Failed to remove test home directory: %v", err)
+		}
+	}()
 
 	paths := setupIntegrationPaths(homeDir)
 
@@ -108,7 +116,9 @@ func validateIntegrationUseProfile(t *testing.T, gitConfigPath string) {
 
 func runIntegrationAutoRule(t *testing.T, homeDir string) {
 	autoDir := filepath.Join(homeDir, "work-projects")
-	os.Mkdir(autoDir, 0755)
+	if err := os.Mkdir(autoDir, 0755); err != nil {
+		t.Fatalf("Failed to create auto directory: %v", err)
+	}
 
 	autoCmd := exec.Command(gitegoBinary, "auto", autoDir, "work")
 	autoCmd.Env = os.Environ()

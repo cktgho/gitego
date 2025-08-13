@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"log"
 	"testing"
 
 	"github.com/bgreenwell/gitego/config"
@@ -61,13 +62,21 @@ func TestEditCommand(t *testing.T) {
 
 // setEditCommandFlags sets the command flags for testing.
 func setEditCommandFlags(email, pat string) func() {
-	editCmd.Flags().Set("email", email)
-	editCmd.Flags().Set("pat", pat)
+	if err := editCmd.Flags().Set("email", email); err != nil {
+		log.Fatalf("Failed to set email flag: %v", err)
+	}
+	if err := editCmd.Flags().Set("pat", pat); err != nil {
+		log.Fatalf("Failed to set pat flag: %v", err)
+	}
 
 	// Return cleanup function
 	return func() {
-		editCmd.Flags().Set("email", "")
-		editCmd.Flags().Set("pat", "")
+		if err := editCmd.Flags().Set("email", ""); err != nil {
+			log.Printf("Warning: Failed to reset email flag: %v", err)
+		}
+		if err := editCmd.Flags().Set("pat", ""); err != nil {
+			log.Printf("Warning: Failed to reset pat flag: %v", err)
+		}
 	}
 }
 

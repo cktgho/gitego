@@ -5,6 +5,7 @@ package cmd
 import (
 	"bytes"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,10 +44,14 @@ func captureOutput(t *testing.T, stdinContent string, action func()) string {
 	// Mock stdin
 	r, w, _ := os.Pipe()
 	if stdinContent != "" {
-		w.WriteString(stdinContent)
+		if _, err := w.WriteString(stdinContent); err != nil {
+			t.Fatalf("Failed to write to stdin: %v", err)
+		}
 	}
 
-	w.Close()
+	if err := w.Close(); err != nil {
+		t.Fatalf("Failed to close stdin pipe: %v", err)
+	}
 
 	os.Stdin = r
 
@@ -56,11 +61,15 @@ func captureOutput(t *testing.T, stdinContent string, action func()) string {
 
 	action()
 
-	writeOut.Close()
+	if err := writeOut.Close(); err != nil {
+		t.Fatalf("Failed to close stdout pipe: %v", err)
+	}
 
 	var buf bytes.Buffer
 
-	io.Copy(&buf, readOut)
+	if _, err := io.Copy(&buf, readOut); err != nil {
+		t.Fatalf("Failed to copy output: %v", err)
+	}
 
 	return buf.String()
 }
@@ -70,11 +79,17 @@ func setupTestRepoAndChangeDir(t *testing.T, originalWd string) (repoRoot, hooks
 	t.Helper()
 
 	repoRoot, hooksDir = setupTestGitRepo(t)
-	os.Chdir(repoRoot)
+	if err := os.Chdir(repoRoot); err != nil {
+		t.Fatalf("Failed to change to repo directory: %v", err)
+	}
 
 	cleanup = func() {
-		os.RemoveAll(repoRoot)
-		os.Chdir(originalWd)
+		if err := os.RemoveAll(repoRoot); err != nil {
+			t.Errorf("Failed to remove test repo: %v", err)
+		}
+		if err := os.Chdir(originalWd); err != nil {
+			t.Errorf("Failed to restore original working directory: %v", err)
+		}
 	}
 
 	return repoRoot, hooksDir, cleanup
@@ -122,7 +137,9 @@ func validateHookAppend(t *testing.T, hooksDir, initialContent, output string) {
 // createExistingHook creates a pre-existing hook file for testing.
 func createExistingHook(hooksDir, content string) {
 	hookPath := filepath.Join(hooksDir, "pre-commit")
-	os.WriteFile(hookPath, []byte(content), 0755)
+	if err := os.WriteFile(hookPath, []byte(content), 0755); err != nil {
+		log.Fatalf("Failed to create existing hook: %v", err)
+	}
 }
 
 func TestInstallHook(t *testing.T) {

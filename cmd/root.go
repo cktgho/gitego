@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 )
@@ -35,7 +36,9 @@ depending on your current working directory or other contexts.`,
 			return
 		}
 		// Otherwise, show the help information.
-		cmd.Help()
+		if err := cmd.Help(); err != nil {
+			log.Fatalf("Failed to show help: %v", err)
+		}
 	},
 }
 
