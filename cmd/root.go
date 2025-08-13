@@ -11,7 +11,7 @@ import (
 )
 
 // The version of the application.
-var version = "dev" // "dev" is a good default for local builds
+var version = "0.1.1" // Updated for release
 
 var (
 	// versionFlag is a flag to print the version and exit.

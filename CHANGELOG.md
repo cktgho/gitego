@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2025-08-13
+
+### Changed
+
+- **Code Quality**: Comprehensive linting and error handling improvements
+  - All error return values are now properly checked throughout the codebase
+  - Error messages follow Go conventions (lowercase, no trailing punctuation)
+  - Added proper error handling for file operations, formatting functions, and system calls
+  - Enhanced defer blocks with proper error checking for resource cleanup
+- **CI/CD**: Updated GitHub Actions workflow to use Go 1.24 for consistency
+- **Documentation**: Enhanced developer guidelines in GEMINI.md with error handling best practices
+- **Project Requirements**: Updated minimum Go version requirement to 1.24+
+
+### Fixed
+
+- Resolved all golangci-lint issues (errcheck and staticcheck violations)
+- Fixed version mismatch between go.mod and GitHub Actions workflow
+
 ## [0.1.0] - 2025-06-25
 
 ### Added

@@ -3,11 +3,9 @@
 [![Build Status](https://github.com/bgreenwell/gitego/actions/workflows/go-ci.yml/badge.svg)](https://github.com/bgreenwell/gitego/actions/workflows/go-ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bgreenwell/gitego)](https://goreportcard.com/report/github.com/bgreenwell/gitego)
 [![Go Reference](https://pkg.go.dev/badge/github.com/bgreenwell/gitego.svg)](https://pkg.go.dev/github.com/bgreenwell/gitego)
-![Go Version](https://img.shields.io/badge/go%20version-%3E=1.21-61CFDD.svg)
+![Go Version](https://img.shields.io/badge/go%20version-%3E=1.24-61CFDD.svg)
 [![Latest Release](https://img.shields.io/github/v/release/bgreenwell/gitego)](https://github.com/bgreenwell/gitego/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-**WARNING: This project is in early development and may change significantly.**
 
 **Your Git identity manager and automatic profile switcher.**
 
@@ -27,7 +25,7 @@ It seamlessly manages your `user.name`, `user.email`, SSH keys, and Personal Acc
 
 ## Installation
 
-You must have [Go](https://go.dev/dl/) (version 1.21+) installed on your system.
+You must have [Go](https://go.dev/dl/) (version 1.24+) installed on your system.
 
 ```bash
 go install github.com/bgreenwell/gitego@latest
