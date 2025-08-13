@@ -10,8 +10,41 @@ on:
     branches: [ main ]
 
 jobs:
+  # This new job will run our linter and formatter checks.
+  lint-and-format:
+    # This job will run on the latest version of Ubuntu.
+    runs-on: ubuntu-latest
+    steps:
+    # Step 1: Set up the Go environment on the runner.
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+        cache: true # Enable Go module caching to speed up future runs.
+
+    # Step 2: Check out your repository's code so the workflow can access it.
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    # Step 3: Check if all Go files are formatted.
+    - name: Check formatting
+      run: |
+        # The `gofmt -l .` command lists files that are not formatted.
+        # If it produces any output, the `test` command will fail the step.
+        test -z "$(gofmt -l .)" || (echo "Go files are not formatted. Please run 'gofmt -s -w .' and commit the changes." && exit 1)
+
+    # Step 4: Install our linter.
+    - name: Install golangci-lint
+      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+    # Step 5: Run the linter.
+    - name: Run linter
+      run: golangci-lint run
+
   # The 'build-and-test' job will run our tests.
   build-and-test:
+    # This job will only run if the 'lint-and-format' job completes successfully.
+    needs: lint-and-format
     # Use a matrix strategy to run this job on all three major operating systems.
     strategy:
       matrix:
@@ -25,13 +58,18 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.21' # Specify the Go version you are using.
+        go-version: '1.21'
+        cache: true # Enable Go module caching.
 
     # Step 2: Check out your repository's code so the workflow can access it.
     - name: Check out code
       uses: actions/checkout@v4
 
-    # Step 3: Run all the tests in the project.
+    # Step 3: Build the application to ensure it compiles on each OS.
+    - name: Build application
+      run: go build -v ./...
+
+    # Step 4: Run all the tests in the project.
     # The `./...` pattern tells Go to run tests in the current directory and all subdirectories.
     - name: Run Tests
       run: go test -v ./...
