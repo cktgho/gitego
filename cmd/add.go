@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	addName     string
-	addEmail    string
-	addUsername string
-	addSSHKey   string
-	addPAT      string
+	addName       string
+	addEmail      string
+	addUsername   string
+	addSSHKey     string
+	addSigningKey string
+	addPAT        string
 )
 
 // adder holds the dependencies for the add command, allowing them to be mocked for testing.
@@ -45,10 +46,11 @@ func (a *adder) run(cmd *cobra.Command, args []string) {
 	}
 
 	newProfile := &config.Profile{
-		Name:     addName,
-		Email:    addEmail,
-		Username: addUsername,
-		SSHKey:   addSSHKey,
+		Name:       addName,
+		Email:      addEmail,
+		Username:   addUsername,
+		SSHKey:     addSSHKey,
+		SigningKey: addSigningKey,
 	}
 
 	cfg.Profiles[profileName] = newProfile
@@ -100,6 +102,7 @@ func init() {
 	addCmd.Flags().StringVarP(&addEmail, "email", "e", "", "The user.email for the profile")
 	addCmd.Flags().StringVar(&addUsername, "username", "", "Login username for the service (e.g., GitHub username)")
 	addCmd.Flags().StringVar(&addSSHKey, "ssh-key", "", "Path to the SSH key for this profile (optional)")
+	addCmd.Flags().StringVar(&addSigningKey, "signing-key", "", "GPG key ID or SSH key path for commit signing (optional)")
 	addCmd.Flags().StringVar(&addPAT, "pat", "", "Personal Access Token for this profile (stored securely)")
 
 	if err := addCmd.MarkFlagRequired("name"); err != nil {
