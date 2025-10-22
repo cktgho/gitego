@@ -11,11 +11,12 @@ import (
 
 var (
 	// These variables will hold the values from the flags for the 'edit' command.
-	editName     string
-	editEmail    string
-	editUsername string
-	editSSHKey   string
-	editPAT      string
+	editName       string
+	editEmail      string
+	editUsername   string
+	editSSHKey     string
+	editSigningKey string
+	editPAT        string
 )
 
 // editor holds the dependencies for the edit command for mocking.
@@ -58,6 +59,10 @@ func (e *editor) run(cmd *cobra.Command, args []string) {
 
 	if cmd.Flags().Changed("ssh-key") {
 		profile.SSHKey = editSSHKey
+	}
+
+	if cmd.Flags().Changed("signing-key") {
+		profile.SigningKey = editSigningKey
 	}
 
 	// Save the updated configuration.
@@ -105,5 +110,6 @@ func init() {
 	editCmd.Flags().StringVarP(&editEmail, "email", "e", "", "The new user.email for the profile")
 	editCmd.Flags().StringVar(&editUsername, "username", "", "The new login username for the service")
 	editCmd.Flags().StringVar(&editSSHKey, "ssh-key", "", "The new path to the SSH key for this profile")
+	editCmd.Flags().StringVar(&editSigningKey, "signing-key", "", "The new GPG key ID or SSH key path for commit signing")
 	editCmd.Flags().StringVar(&editPAT, "pat", "", "The new Personal Access Token for this profile")
 }

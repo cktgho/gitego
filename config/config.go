@@ -15,11 +15,12 @@ import (
 
 // Profile represents a single user profile with a name and email.
 type Profile struct {
-	Name     string `yaml:"name"`
-	Email    string `yaml:"email"`
-	Username string `yaml:"username,omitempty"`
-	SSHKey   string `yaml:"ssh_key,omitempty"`
-	PAT      string `yaml:"-"`
+	Name       string `yaml:"name"`
+	Email      string `yaml:"email"`
+	Username   string `yaml:"username,omitempty"`
+	SSHKey     string `yaml:"ssh_key,omitempty"`
+	SigningKey string `yaml:"signing_key,omitempty"`
+	PAT        string `yaml:"-"`
 }
 
 // AutoRule represents a single directory-to-profile mapping.
@@ -228,6 +229,10 @@ func EnsureProfileGitconfig(profileName string, profile *Profile) error {
 	}
 
 	content := fmt.Sprintf("[user]\n    name = %s\n    email = %s\n", profile.Name, profile.Email)
+
+	if profile.SigningKey != "" {
+		content += fmt.Sprintf("    signingkey = %s\n", profile.SigningKey)
+	}
 
 	if profile.SSHKey != "" {
 		sshCommand := fmt.Sprintf("ssh -i %s", profile.SSHKey)

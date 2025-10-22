@@ -242,3 +242,114 @@ func TestRemoveIncludeIf_MultipleRulesWithSpaces(t *testing.T) {
 		t.Error("The [user] section was unexpectedly removed.")
 	}
 }
+
+// TestEnsureProfileGitconfig_WithSigningKey tests that a profile with a signing key
+// generates the correct .gitconfig file content.
+func TestEnsureProfileGitconfig_WithSigningKey(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "gitego-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Warning: Failed to remove temp directory (this is common on Windows): %v", err)
+		}
+	}()
+
+	// Override the global profilesDir to use our temp directory.
+	originalProfilesDir := profilesDir
+	profilesDir = tempDir
+
+	defer func() {
+		profilesDir = originalProfilesDir
+	}()
+
+	// Create a profile with a signing key.
+	profile := &Profile{
+		Name:       "Test User",
+		Email:      "test@example.com",
+		SigningKey: "ABCD1234",
+	}
+
+	// Call the function.
+	err = EnsureProfileGitconfig("test-profile", profile)
+	if err != nil {
+		t.Fatalf("EnsureProfileGitconfig returned an error: %v", err)
+	}
+
+	// Read the generated file.
+	generatedFile := filepath.Join(tempDir, "test-profile.gitconfig")
+	content, err := os.ReadFile(generatedFile)
+	if err != nil {
+		t.Fatalf("Failed to read generated gitconfig file: %v", err)
+	}
+
+	contentStr := string(content)
+
+	// Assert that the signing key is present.
+	if !strings.Contains(contentStr, "signingkey = ABCD1234") {
+		t.Errorf("Expected 'signingkey = ABCD1234' in gitconfig, but got:\n%s", contentStr)
+	}
+
+	// Assert that the user section is present.
+	if !strings.Contains(contentStr, "name = Test User") {
+		t.Errorf("Expected 'name = Test User' in gitconfig, but got:\n%s", contentStr)
+	}
+
+	if !strings.Contains(contentStr, "email = test@example.com") {
+		t.Errorf("Expected 'email = test@example.com' in gitconfig, but got:\n%s", contentStr)
+	}
+}
+
+// TestEnsureProfileGitconfig_WithoutSigningKey tests that a profile without a signing key
+// does not include the signingkey line.
+func TestEnsureProfileGitconfig_WithoutSigningKey(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "gitego-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Warning: Failed to remove temp directory (this is common on Windows): %v", err)
+		}
+	}()
+
+	// Override the global profilesDir to use our temp directory.
+	originalProfilesDir := profilesDir
+	profilesDir = tempDir
+
+	defer func() {
+		profilesDir = originalProfilesDir
+	}()
+
+	// Create a profile without a signing key.
+	profile := &Profile{
+		Name:  "Test User",
+		Email: "test@example.com",
+	}
+
+	// Call the function.
+	err = EnsureProfileGitconfig("test-profile", profile)
+	if err != nil {
+		t.Fatalf("EnsureProfileGitconfig returned an error: %v", err)
+	}
+
+	// Read the generated file.
+	generatedFile := filepath.Join(tempDir, "test-profile.gitconfig")
+	content, err := os.ReadFile(generatedFile)
+	if err != nil {
+		t.Fatalf("Failed to read generated gitconfig file: %v", err)
+	}
+
+	contentStr := string(content)
+
+	// Assert that the signing key is NOT present.
+	if strings.Contains(contentStr, "signingkey") {
+		t.Errorf("Did not expect 'signingkey' in gitconfig when SigningKey is empty, but got:\n%s", contentStr)
+	}
+
+	// Assert that the user section is still present.
+	if !strings.Contains(contentStr, "name = Test User") {
+		t.Errorf("Expected 'name = Test User' in gitconfig, but got:\n%s", contentStr)
+	}
+}
